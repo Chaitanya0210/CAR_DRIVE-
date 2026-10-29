@@ -9,20 +9,87 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
+// ==============================================================================
+// ENUMS
+// ==============================================================================
+
 enum UserRole {
   BUYER
   SELLER
   ADMIN
 }
 
-enum SellerKybStatus {
-  REGISTERED
-  KYB_PENDING
-  KYB_VERIFIED
-  KYB_REJECTED
-  FEE_PENDING
-  ACTIVE
-  SUSPENDED
+enum SellerKycStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum SellerRegistrationFeeStatus {
+  UNPAID
+  PAID
+  EXEMPT
+}
+
+enum KycDocumentType {
+  GST_CERTIFICATE
+  PAN_CARD
+  DEALERSHIP_AGREEMENT
+  TRADE_CERTIFICATE
+  CANCELLED_CHEQUE
+}
+
+enum KycVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ZoneLevel {
+  STATE
+  DISTRICT
+  TALUKA
+  VILLAGE_PINCODE
+}
+
+enum ZoneDensityClass {
+  METRO
+  URBAN
+  SEMI_URBAN
+  RURAL
+  DEEP_RURAL
+}
+
+enum VehicleBodyType {
+  HATCHBACK
+  SEDAN
+  COMPACT_SUV
+  SUV
+  MUV
+  EV
+}
+
+enum VehicleFuelType {
+  PETROL
+  DIESEL
+  CNG
+  ELECTRIC
+  HYBRID
+}
+
+enum VehicleTransmission {
+  MANUAL
+  AUTOMATIC
+  AMT
+  CVT
+  DCT
+}
+
+enum VehicleConditionType {
+  CLEARANCE
+  DEMO
+  PREVIOUS_YEAR
 }
 
 enum GroupStatus {
@@ -37,12 +104,20 @@ enum GroupStatus {
   CANCELLED
 }
 
+enum MembershipStatus {
+  ACTIVE
+  VOTED
+  CONFIRMED
+  WITHDRAWN
+  REFUNDED
+}
+
 enum RfqStatus {
   SEALED_BIDDING
   EVALUATION
   VOTING_OPEN
-  ACCEPTED
-  REJECTED
+  AWARDED
+  NO_DEAL
   CANCELLED
 }
 
@@ -54,209 +129,444 @@ enum QuoteStatus {
   REJECTED
 }
 
-enum VehicleFuelType {
-  PETROL
-  DIESEL
-  CNG
-  ELECTRIC
-  HYBRID
+enum QuoteLineItemCategory {
+  EX_SHOWROOM
+  LOGISTICS
+  RTO_TAX
+  INSURANCE
+  ACCESSORIES
+  DISCOUNT
 }
 
-enum VehicleConditionType {
-  CLEARANCE
-  DEMO
-  PREVIOUS_YEAR
+enum BookingStatus {
+  TOKEN_CONFIRMED
+  DEALER_ACCEPTED
+  CHASSIS_ALLOCATED
+  INVOICED
+  REGISTRATION_COMPLETE
+  DELIVERY_IN_PROGRESS
+  FULFILLED
+  CANCELLED
 }
 
-model Buyer {
-  id          String        @id @default(uuid())
-  phone       String        @unique
-  name        String?
-  pincode     String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  memberships GroupMember[]
-  votes       QuoteVote[]
+enum PaymentType {
+  TOKEN_HOLD
+  DOWN_PAYMENT
+  FULL_PAYMENT
+  SELLER_ONBOARDING_FEE
+}
 
+enum PaymentStatus {
+  INITIATED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PENDING
+}
+
+enum PaymentGatewayProvider {
+  RAZORPAY
+  CASHFREE
+  MOCK
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSED
+  DISPUTED
+}
+
+enum DeliveryStatus {
+  DISPATCHED
+  IN_TRANSIT
+  ARRIVED_ZONE
+  DOORSTEP_DELIVERED
+}
+
+enum OfferEnquiryStatus {
+  ENQUIRED
+  TOKEN_HELD
+  CONVERTED
+  EXPIRED
+}
+
+enum LedgerAccountType {
+  BUYER_ESCROW_HOLD
+  PLATFORM_REVENUE
+  SELLER_RECEIVABLE
+  TAX_PAYABLE
+}
+
+enum NotificationChannel {
+  SMS
+  WHATSAPP
+  IN_APP
+}
+
+// ==============================================================================
+// 1. IDENTITY & USER PROFILES
+// ==============================================================================
+
+model User {
+  id           String        @id @default(uuid())
+  email        String?       @unique
+  phone        String        @unique
+  passwordHash String?
+  role         UserRole      @default(BUYER)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  buyerProfile  BuyerProfile?
+  sellerProfile SellerProfile?
+  notifications Notification[]
+
+  @@index([role])
   @@index([phone])
-}
-
-model Seller {
-  id                         String           @id @default(uuid())
-  dealershipName             String
-  email                      String           @unique
-  passwordHash               String
-  contactPhone               String
-  mfaSecret                  String?
-  mfaEnabled                 Boolean          @default(false)
-  kybStatus                  SellerKybStatus  @default(REGISTERED)
-  kybRejectionReason         String?
-  gstin                      String?          @unique
-  panNumber                  String?
-  tradeCertificateUrl        String?
-  dealershipAuthorizationUrl String?
-  registrationFeePaid        Boolean          @default(false)
-  registrationFeeTxId        String?
-  createdAt                  DateTime         @default(now())
-  updatedAt                  DateTime         @updatedAt
-  quotes                     DealerQuote[]
-  offeredVehicles            OfferedVehicle[]
-
   @@index([email])
-  @@index([kybStatus])
 }
 
-model Admin {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
+model BuyerProfile {
+  id             String        @id @default(uuid())
+  userId         String        @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String
+  primaryZoneId  String?
+  primaryZone    Zone?         @relation("BuyerPrimaryZone", fields: [primaryZoneId], references: [id])
+  pincode        String?
+  alternatePhone String?
+  address        String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  memberships    Membership[]
+  votes          Vote[]
+  offerEnquiries OfferEnquiry[]
+  reviews        Review[]
+
+  @@index([primaryZoneId])
+}
+
+model SellerProfile {
+  id                     String                      @id @default(uuid())
+  userId                 String                      @unique
+  user                   User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealershipLegalName    String
+  tradeName              String
+  gstin                  String                      @unique
+  panNumber              String
+  cinNumber              String?
+  kycStatus              SellerKycStatus             @default(DRAFT)
+  registrationFeeStatus  SellerRegistrationFeeStatus @default(UNPAID)
+  commissionRatePercent  Decimal                     @default(1.00) @db.Decimal(5, 2)
+  primaryContactName     String
+  primaryContactPhone    String
+  rejectionReason        String?
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+
+  branches               SellerBranch[]
+  brandAuthorizations    SellerBrandAuthorization[]
+  kycDocuments           SellerKyc[]
+  registrationPayments   SellerRegistrationPayment[]
+  quotes                 Quote[]
+  offeredVehicles        OfferedVehicle[]
+  settlements            Settlement[]
+  rfqEligibilities       RFQEligibility[]
+  reviews                Review[]
+
+  @@index([kycStatus])
+  @@index([registrationFeeStatus])
+  @@index([gstin])
+}
+
+model SellerBranch {
+  id             String         @id @default(uuid())
+  sellerProfileId String
+  sellerProfile  SellerProfile  @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  branchName     String
+  zoneId         String
+  zone           Zone           @relation(fields: [zoneId], references: [id])
+  address        String
+  pincode        String
+  latitude       Float
+  longitude      Float
+  contactPhone   String
+  isHeadquarters Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  quotes               Quote[]
+  offeredVehicles      OfferedVehicle[]
+  shipmentsDispatched  DeliveryShipment[]
+
+  @@index([zoneId])
+  @@index([sellerProfileId])
+}
+
+model SellerBrandAuthorization {
+  id              String        @id @default(uuid())
+  sellerProfileId String
+  sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  brandId         String
+  brand           Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  certificateUrl  String
+  validFrom       DateTime
+  validUntil      DateTime
+  isVerified      Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([sellerProfileId, brandId])
+  @@index([brandId])
+}
+
+model SellerKyc {
+  id                 String                @id @default(uuid())
+  sellerProfileId    String
+  sellerProfile      SellerProfile         @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  documentType       KycDocumentType
+  documentUrl        String
+  verificationStatus KycVerificationStatus @default(PENDING)
+  rejectionReason    String?
+  verifiedByUserId   String?
+  verifiedAt         DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@index([sellerProfileId])
+  @@index([verificationStatus])
+}
+
+model SellerRegistrationPayment {
+  id                 String                 @id @default(uuid())
+  sellerProfileId    String
+  sellerProfile      SellerProfile          @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  amountPaise        BigInt                 @default(1999900)
+  gstAmountPaise     BigInt                 @default(359982)
+  totalAmountPaise   BigInt                 @default(2359882)
+  status             PaymentStatus          @default(PENDING)
+  gatewayProvider    PaymentGatewayProvider @default(MOCK)
+  gatewayPaymentRef  String?
+  paidAt             DateTime?
+  createdAt          DateTime               @default(now())
+
+  @@index([sellerProfileId])
+  @@index([status])
+}
+
+// ==============================================================================
+// 2. ZONE HIERARCHY & SPATIAL TOPOLOGY
+// ==============================================================================
+
+model Zone {
+  id           String           @id @default(uuid())
+  parentId     String?
+  parent       Zone?            @relation("ZoneHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children     Zone[]           @relation("ZoneHierarchy")
   name         String
-  role         UserRole  @default(ADMIN)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  code         String
+  level        ZoneLevel
+  densityClass ZoneDensityClass @default(RURAL)
+  pincode      String?
+  latitude     Float?
+  longitude    Float?
+  metadata     Json?
+  createdAt    DateTime         @default(now())
+
+  buyerProfiles         BuyerProfile[]         @relation("BuyerPrimaryZone")
+  sellerBranches        SellerBranch[]
+  groups                Group[]
+  stateTaxConfigs       StateTaxConfig[]
+  variantCityPrices     VariantCityPrice[]
+  destinationShipments  DeliveryShipment[]
+  clusters              ZoneCluster[]          @relation("ZoneClusterMembers")
+  leadClusters          ZoneCluster[]          @relation("LeadTaluka")
+
+  @@unique([parentId, code])
+  @@index([level])
+  @@index([pincode])
+  @@index([densityClass])
 }
 
-// ----------------------------------------------------
-// Geographic Zone Hierarchy (State > District > Taluka > Pincode)
-// ----------------------------------------------------
+model ZoneCluster {
+  id           String   @id @default(uuid())
+  name         String
+  leadTalukaId String
+  leadTaluka   Zone     @relation("LeadTaluka", fields: [leadTalukaId], references: [id])
+  radiusKm     Int      @default(50)
+  description  String?
+  createdAt    DateTime @default(now())
 
-model State {
-  id              String           @id @default(uuid())
-  code            String           @unique
-  name            String
-  gstStateCode    Int
-  districts       District[]
-  rtoZoneConfigs  RtoZoneConfig[]
-  offeredVehicles OfferedVehicle[]
+  zones        Zone[]   @relation("ZoneClusterMembers")
+
+  @@index([leadTalukaId])
 }
 
-model District {
-  id        String   @id @default(uuid())
-  stateId   String
-  state     State    @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  code      String
-  name      String
-  talukas   Taluka[]
+// ==============================================================================
+// 3. VEHICLE CATALOG
+// ==============================================================================
 
-  @@unique([stateId, code])
-}
+model Brand {
+  id              String                     @id @default(uuid())
+  name            String                     @unique
+  slug            String                     @unique
+  logoUrl         String?
+  countryOfOrigin String                     @default("India")
+  isActive        Boolean                    @default(true)
 
-model Taluka {
-  id         String             @id @default(uuid())
-  districtId String
-  district   District           @relation(fields: [districtId], references: [id], onDelete: Cascade)
-  name       String
-  isRural    Boolean            @default(true)
-  pincodes   PincodeDirectory[]
-  groups     GroupDemand[]
-
-  @@unique([districtId, name])
-}
-
-model PincodeDirectory {
-  pincode   String  @id
-  talukaId  String
-  taluka    Taluka  @relation(fields: [talukaId], references: [id], onDelete: Cascade)
-  latitude  Float?
-  longitude Float?
-
-  @@index([talukaId])
-}
-
-// ----------------------------------------------------
-// Vehicle Catalog Models
-// ----------------------------------------------------
-
-model CarMake {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  logoUrl   String?
-  models    CarModel[]
+  models          CarModel[]
+  sellerAuthorizations SellerBrandAuthorization[]
 }
 
 model CarModel {
-  id       String       @id @default(uuid())
-  makeId   String
-  make     CarMake      @relation(fields: [makeId], references: [id], onDelete: Cascade)
-  name     String
-  variants CarVariant[]
+  id        String          @id @default(uuid())
+  brandId   String
+  brand     Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  bodyType  VehicleBodyType
+  isActive  Boolean         @default(true)
 
-  @@unique([makeId, name])
+  variants  Variant[]
+
+  @@unique([brandId, slug])
 }
 
-model CarVariant {
-  id                     String           @id @default(uuid())
-  modelId                String
-  model                  CarModel         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+model Variant {
+  id                     String              @id @default(uuid())
+  carModelId            String
+  carModel               CarModel            @relation(fields: [carModelId], references: [id], onDelete: Cascade)
   name                   String
   fuelType               VehicleFuelType
-  transmission           String
-  engineCc               Int
-  standardExShowroomPaise BigInt
+  transmission           VehicleTransmission
+  engineCc               Int?
+  batteryKwh             Decimal?            @db.Decimal(5, 2)
+  seatingCapacity        Int                 @default(5)
+  baseExShowroomPaise    BigInt
   imageUrl               String?
-  groups                 GroupDemand[]
+  isActive               Boolean             @default(true)
+
+  cityPrices             VariantCityPrice[]
+  groups                 Group[]
   offeredVehicles        OfferedVehicle[]
 
-  @@unique([modelId, name, fuelType])
+  @@unique([carModelId, name, fuelType, transmission])
 }
 
-// ----------------------------------------------------
-// Group Demand & Reverse Auction (RFQ)
-// ----------------------------------------------------
+model VariantCityPrice {
+  id              String   @id @default(uuid())
+  variantId       String
+  variant         Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  zoneId          String
+  zone            Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  exShowroomPaise BigInt
+  effectiveDate   DateTime @default(now())
+  createdAt       DateTime @default(now())
 
-model GroupDemand {
-  id               String               @id @default(uuid())
+  @@unique([variantId, zoneId])
+}
+
+// ==============================================================================
+// 4. GROUP DEMAND & REVERSE AUCTION (RFQ)
+// ==============================================================================
+
+model Group {
+  id               String       @id @default(uuid())
   variantId        String
-  variant          CarVariant           @relation(fields: [variantId], references: [id])
-  talukaId         String
-  taluka           Taluka               @relation(fields: [talukaId], references: [id])
-  targetPincode    String
-  targetBuyers     Int
-  currentBuyerCount Int                 @default(0)
-  status           GroupStatus          @default(FORMING)
+  variant          Variant      @relation(fields: [variantId], references: [id])
+  targetZoneId     String
+  targetZone       Zone         @relation(fields: [targetZoneId], references: [id])
+  targetCount      Int          @default(5)
+  currentCount     Int          @default(0)
+  status           GroupStatus  @default(FORMING)
   deadline         DateTime
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  members          GroupMember[]
-  rfq              ReverseAuctionRfq?
+  quorumReachedAt  DateTime?
+  dealLockedAt     DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  memberships      Membership[]
+  rfq              RFQ?
 
   @@index([status])
-  @@index([talukaId])
+  @@index([targetZoneId])
+  @@index([deadline])
 }
 
-model GroupMember {
-  id             String      @id @default(uuid())
+model Membership {
+  id             String           @id @default(uuid())
   groupId        String
-  group          GroupDemand @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  buyerId        String
-  buyer          Buyer       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  preferredColor String?
-  joinedAt       DateTime    @default(now())
+  group          Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  buyerProfileId String
+  buyerProfile   BuyerProfile     @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+  tokenPaidPaise BigInt           @default(500000)
+  status         MembershipStatus @default(ACTIVE)
+  joinedAt       DateTime         @default(now())
 
-  @@unique([groupId, buyerId])
+  preference     GroupPreference?
+  vote           Vote?
+  booking        Booking?
+
+  @@unique([groupId, buyerProfileId])
+  @@index([status])
 }
 
-model ReverseAuctionRfq {
-  id                  String        @id @default(uuid())
-  groupId             String        @unique
-  group               GroupDemand   @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  status              RfqStatus     @default(SEALED_BIDDING)
-  sealedBidsCloseAt   DateTime
-  votingClosesAt      DateTime?
-  winningQuoteId      String?       @unique
-  winningQuote        DealerQuote?  @relation("WinningQuote", fields: [winningQuoteId], references: [id])
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  quotes              DealerQuote[] @relation("RfqQuotes")
+model GroupPreference {
+  id                String           @id @default(uuid())
+  membershipId      String           @unique
+  membership        Membership       @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  preferredColor    String?
+  preferredFuel     VehicleFuelType?
+  accessoriesNeeded Json?
+  notes             String?
 }
 
-model DealerQuote {
-  id                         String             @id @default(uuid())
+model RFQ {
+  id                String           @id @default(uuid())
+  groupId           String           @unique
+  group             Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rfqNumber         String           @unique
+  status            RfqStatus        @default(SEALED_BIDDING)
+  bidWindowClosesAt DateTime
+  votingClosesAt    DateTime?
+  winningQuoteId    String?          @unique
+  winningQuote      Quote?           @relation("WinningQuote", fields: [winningQuoteId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  eligibilities     RFQEligibility[]
+  quotes            Quote[]          @relation("RfqQuotes")
+  votes             Vote[]
+
+  @@index([status])
+  @@index([bidWindowClosesAt])
+  @@index([votingClosesAt])
+}
+
+model RFQEligibility {
+  id              String        @id @default(uuid())
+  rfqId           String
+  rfq             RFQ           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  sellerProfileId String
+  sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  maxTransitKm    Int           @default(300)
+  isNotified      Boolean       @default(false)
+  eligibleAt      DateTime      @default(now())
+
+  @@unique([rfqId, sellerProfileId])
+  @@index([sellerProfileId])
+}
+
+model Quote {
+  id                         String            @id @default(uuid())
   rfqId                      String
-  rfq                        ReverseAuctionRfq  @relation("RfqQuotes", fields: [rfqId], references: [id], onDelete: Cascade)
-  sellerId                   String
-  seller                     Seller             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  status                     QuoteStatus        @default(SEALED)
+  rfq                        RFQ               @relation("RfqQuotes", fields: [rfqId], references: [id], onDelete: Cascade)
+  sellerProfileId            String
+  sellerProfile              SellerProfile     @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  branchId                   String
+  branch                     SellerBranch      @relation(fields: [branchId], references: [id])
+  status                     QuoteStatus       @default(SEALED)
   exShowroomPaise            BigInt
   batchGroupDiscountPaise    BigInt
   dealerLogisticsToZonePaise BigInt
@@ -266,88 +576,240 @@ model DealerQuote {
   tcsPaise                   BigInt
   totalLandedCostPaise       BigInt
   deliveryTimelineDays       Int
+  validityDate               DateTime
   notes                      String?
-  createdAt                  DateTime           @default(now())
-  updatedAt                  DateTime           @updatedAt
-  votes                      QuoteVote[]
-  wonRfq                     ReverseAuctionRfq? @relation("WinningQuote")
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+
+  lineItems                  QuoteLineItem[]
+  votes                      Vote[]
+  wonRfq                     RFQ?              @relation("WinningQuote")
+  bookings                   Booking[]
 
   @@index([rfqId])
-  @@index([sellerId])
+  @@index([sellerProfileId])
+  @@index([status])
+  @@index([totalLandedCostPaise])
 }
 
-model QuoteVote {
-  id        String      @id @default(uuid())
-  quoteId   String
-  quote     DealerQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  buyerId   String
-  buyer     Buyer       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  votedAt   DateTime    @default(now())
+model QuoteLineItem {
+  id          String                @id @default(uuid())
+  quoteId     String
+  quote       Quote                 @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  category    QuoteLineItemCategory
+  description String
+  amountPaise BigInt
+  isMandatory Boolean               @default(true)
 
-  @@unique([quoteId, buyerId])
+  @@index([quoteId])
 }
 
-// ----------------------------------------------------
-// Offered Vehicles (Clearance / Demo Stock)
-// ----------------------------------------------------
+model Vote {
+  id             String       @id @default(uuid())
+  rfqId          String
+  rfq            RFQ          @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  membershipId   String       @unique
+  membership     Membership   @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  quoteId        String
+  quote          Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  buyerProfileId String
+  buyerProfile   BuyerProfile @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+  votedAt        DateTime     @default(now())
+
+  @@index([rfqId])
+  @@index([quoteId])
+}
+
+// ==============================================================================
+// 5. BOOKING, PAYMENTS & SETTLEMENTS
+// ==============================================================================
+
+model Booking {
+  id                 String         @id @default(uuid())
+  bookingNumber      String         @unique
+  membershipId       String?        @unique
+  membership         Membership?    @relation(fields: [membershipId], references: [id])
+  quoteId            String?
+  quote              Quote?         @relation(fields: [quoteId], references: [id])
+  offeredVehicleId   String?        @unique
+  offeredVehicle     OfferedVehicle? @relation(fields: [offeredVehicleId], references: [id])
+  status             BookingStatus  @default(TOKEN_CONFIRMED)
+  totalOnRoadPaise   BigInt
+  tokenAmountPaise   BigInt
+  balanceAmountPaise BigInt
+  chassisNumber      String?
+  registrationNumber String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  payments           Payment[]
+  settlement         Settlement?
+  shipment           DeliveryShipment?
+  ledgerEntries      LedgerEntry[]
+  review             Review?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Payment {
+  id                    String                 @id @default(uuid())
+  bookingId             String
+  booking               Booking                @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId                String
+  amountPaise           BigInt
+  paymentType           PaymentType
+  status                PaymentStatus          @default(INITIATED)
+  gatewayProvider       PaymentGatewayProvider @default(MOCK)
+  gatewayTransactionRef String?
+  paymentMetadata       Json?
+  createdAt             DateTime               @default(now())
+
+  @@index([bookingId])
+  @@index([status])
+}
+
+model Settlement {
+  id                      String           @id @default(uuid())
+  bookingId               String           @unique
+  booking                 Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sellerProfileId         String
+  sellerProfile           SellerProfile    @relation(fields: [sellerProfileId], references: [id])
+  grossDealValuePaise     BigInt
+  commissionPercent       Decimal          @default(1.00) @db.Decimal(5, 2)
+  platformCommissionPaise BigInt
+  netPayableToSellerPaise BigInt
+  status                  SettlementStatus @default(PENDING)
+  settledAt               DateTime?
+  createdAt               DateTime         @default(now())
+
+  @@index([sellerProfileId])
+  @@index([status])
+}
+
+model DeliveryShipment {
+  id                  String             @id @default(uuid())
+  bookingId           String             @unique
+  booking             Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  logisticsProvider   String
+  driverName          String?
+  driverPhone         String?
+  trackingNumber      String?
+  originBranchId      String
+  originBranch        SellerBranch       @relation(fields: [originBranchId], references: [id])
+  destinationZoneId   String
+  destinationZone     Zone               @relation(fields: [destinationZoneId], references: [id])
+  status              DeliveryStatus     @default(DISPATCHED)
+  estimatedDeliveryAt DateTime
+  actualDeliveredAt   DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  milestones          ShipmentMilestone[]
+
+  @@index([status])
+  @@index([destinationZoneId])
+}
+
+model ShipmentMilestone {
+  id            String           @id @default(uuid())
+  shipmentId    String
+  shipment      DeliveryShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  locationName  String
+  proofPhotoUrl String?
+  timestamp     DateTime         @default(now())
+
+  @@index([shipmentId])
+}
+
+// ==============================================================================
+// 6. OFFERED VEHICLES (CLEARANCE & DEMO STOCK)
+// ==============================================================================
 
 model OfferedVehicle {
-  id                        String               @id @default(uuid())
-  sellerId                  String
-  seller                    Seller               @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  variantId                 String
-  variant                   CarVariant           @relation(fields: [variantId], references: [id])
-  vin                       String               @unique
-  manufactureYear           Int
-  conditionType             VehicleConditionType
-  odometerKm                Int                  @default(0)
-  color                     String
-  regularExShowroomPaise    BigInt
-  discountedExShowroomPaise BigInt
-  imageUrl                  String
-  isAvailable               Boolean              @default(true)
-  createdAt                 DateTime             @default(now())
-  updatedAt                 DateTime             @updatedAt
-  eligibleStates            State[]
+  id                    String               @id @default(uuid())
+  sellerProfileId       String
+  sellerProfile         SellerProfile        @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  branchId              String
+  branch                SellerBranch         @relation(fields: [branchId], references: [id])
+  variantId             String
+  variant               Variant              @relation(fields: [variantId], references: [id])
+  vin                   String               @unique
+  manufactureYear       Int
+  conditionType         VehicleConditionType
+  odometerKm            Int                  @default(0)
+  color                 String
+  regularPricePaise     BigInt
+  discountedPricePaise  BigInt
+  imageUrl              String
+  galleryUrls           Json?
+  isAvailable           Boolean              @default(true)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  enquiries             OfferEnquiry[]
+  booking               Booking?
 
   @@index([isAvailable])
   @@index([variantId])
+  @@index([conditionType])
 }
 
-// ----------------------------------------------------
-// Tax & Regulatory Configs (Needs Verification)
-// ----------------------------------------------------
+model OfferEnquiry {
+  id                 String             @id @default(uuid())
+  offeredVehicleId   String
+  offeredVehicle     OfferedVehicle     @relation(fields: [offeredVehicleId], references: [id], onDelete: Cascade)
+  buyerProfileId     String
+  buyerProfile       BuyerProfile       @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+  destinationZoneId  String
+  status             OfferEnquiryStatus @default(ENQUIRED)
+  tokenAmountPaise   BigInt             @default(500000)
+  createdAt          DateTime           @default(now())
 
-model TaxRuleConfig {
-  id                String   @id @default(uuid())
-  ruleKey           String   @unique
-  description       String
-  ratePercent       Decimal  @db.Decimal(5, 2)
-  flatFeePaise      BigInt   @default(0)
-  needsVerification Boolean  @default(true)
-  verifiedAt        DateTime?
-  verifiedByAdminId String?
-  updatedAt         DateTime @updatedAt
+  @@index([offeredVehicleId])
+  @@index([status])
 }
 
-model RtoZoneConfig {
-  id                String          @id @default(uuid())
-  stateId           String
-  state             State           @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  fuelType          VehicleFuelType
-  minPricePaise     BigInt
-  maxPricePaise     BigInt
-  taxPercent        Decimal         @db.Decimal(5, 2)
-  needsVerification Boolean         @default(true)
-  verifiedAt        DateTime?
-  updatedAt         DateTime        @updatedAt
+// ==============================================================================
+// 7. REVIEWS, IMMUTABLE LEDGER, AUDIT & TAX
+// ==============================================================================
 
-  @@unique([stateId, fuelType, minPricePaise, maxPricePaise])
+model Review {
+  id              String        @id @default(uuid())
+  bookingId       String        @unique
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  buyerProfileId  String
+  buyerProfile    BuyerProfile  @relation(fields: [buyerProfileId], references: [id], onDelete: Cascade)
+  sellerProfileId String
+  sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  rating          Int
+  title           String
+  comment         String
+  createdAt       DateTime      @default(now())
+
+  @@index([sellerProfileId])
+  @@index([rating])
 }
 
-// ----------------------------------------------------
-// Immutable Audit Log
-// ----------------------------------------------------
+model LedgerEntry {
+  id                String            @id @default(uuid())
+  entryNumber       Int               @default(autoincrement()) @unique
+  accountType       LedgerAccountType
+  bookingId         String?
+  booking           Booking?          @relation(fields: [bookingId], references: [id])
+  actorId           String?
+  debitPaise        BigInt            @default(0)
+  creditPaise       BigInt            @default(0)
+  balanceAfterPaise BigInt
+  narration         String
+  createdAt         DateTime          @default(now())
+
+  @@index([accountType])
+  @@index([bookingId])
+  @@index([createdAt])
+}
 
 model AuditLog {
   id            String   @id @default(uuid())
@@ -365,4 +827,37 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId])
   @@index([createdAt])
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   NotificationChannel
+  title     String
+  message   String
+  isRead    Boolean             @default(false)
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model StateTaxConfig {
+  id                String          @id @default(uuid())
+  zoneId            String
+  zone              Zone            @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  fuelType          VehicleFuelType
+  minPricePaise     BigInt
+  maxPricePaise     BigInt
+  taxPercent        Decimal         @db.Decimal(5, 2)
+  flatFeePaise      BigInt          @default(0)
+  needsVerification Boolean         @default(true)
+  verifiedAt        DateTime?
+  verifiedByUserId  String?
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([zoneId, fuelType, minPricePaise, maxPricePaise])
+  @@index([needsVerification])
 }
