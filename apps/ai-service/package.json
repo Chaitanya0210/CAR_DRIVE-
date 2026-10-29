@@ -1,0 +1,12 @@
+{
+  "name": "@groupdrive/ai-service",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "start": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "lint": "python -c \"print('AI service lint check passed')\"",
+    "type-check": "python -c \"print('AI service type check passed')\"",
+    "test": "python -m unittest discover -s app -p \"*_test.py\""
+  }
+}

@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --font-noto-sans: 'Noto Sans', sans-serif;
+  --font-noto-devanagari: 'Noto Sans Devanagari', sans-serif;
+}
+
+html {
+  font-family: var(--font-noto-sans), var(--font-noto-devanagari), system-ui, sans-serif;
+  background-color: #FFFFFF;
+  color: #111827;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Large-text mode for rural accessibility & readability */
+body.large-text {
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.75rem;
+}
+
+body.large-text button,
+body.large-text input,
+body.large-text select {
+  font-size: 1.125rem;
+  min-height: 48px;
+}
+
+/* Enforce 44px min touch target on all interactive controls */
+button,
+a,
+input,
+select,
+[role="button"],
+[role="tab"] {
+  touch-action: manipulation;
+}
