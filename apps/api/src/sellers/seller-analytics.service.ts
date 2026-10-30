@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { validateInventoryCsvRows, InventoryCsvValidationReport } from '@groupdrive/shared';
+import { VehicleConditionType } from '@groupdrive/db';
 
 @Injectable()
 export class SellerAnalyticsService {
@@ -256,7 +257,7 @@ export class SellerAnalyticsService {
           variantId,
           vin: data.vin.toUpperCase(),
           manufactureYear: data.year || 2024,
-          conditionType: (data.category as any) || 'CLEARANCE',
+          conditionType: (data.category as VehicleConditionType) || 'CLEARANCE',
           odometerKm: data.odometer || 0,
           color: data.color || 'White',
           regularPricePaise: regularPaise,

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button, Badge, VerifiedBadge } from '@groupdrive/ui';
-import { ArrowRight, ShieldCheck, Truck, Users } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Truck, Users, Sparkles } from 'lucide-react';
+import { CarAdvisorChatWidget } from '../components/CarAdvisorChatWidget';
 
 export default function HomePage() {
   return (
@@ -15,11 +16,23 @@ export default function HomePage() {
             <p className="text-xs text-neutral-500">ग्रुपड्राइव • भारत</p>
           </div>
         </div>
-        <Link href="/design">
-          <Button variant="outline" size="sm">
-            Design System (/design)
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/advisor">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1.5 text-xs font-semibold"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span>AI Car Advisor</span>
+            </Button>
+          </Link>
+          <Link href="/design">
+            <Button variant="outline" size="sm">
+              Design System
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <section className="my-auto py-12 space-y-6">
@@ -35,7 +48,9 @@ export default function HomePage() {
         </h2>
 
         <p className="text-base sm:text-lg text-neutral-600 max-w-2xl">
-          GroupDrive aggregates demand across Indian districts and talukas. Once your group hits quorum, verified dealers nationwide compete in a sealed reverse auction. Compare quotes strictly on landed delivery cost.
+          GroupDrive aggregates demand across Indian districts and talukas. Once your group hits
+          quorum, verified dealers nationwide compete in a sealed reverse auction. Compare quotes
+          strictly on landed delivery cost.
         </p>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4">
@@ -81,6 +96,9 @@ export default function HomePage() {
           <span>WCAG 2.2 AA</span>
         </div>
       </footer>
+
+      {/* Floating Multilingual RAG Car Advisor Widget */}
+      <CarAdvisorChatWidget />
     </main>
   );
 }

@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  hasPermission,
-  canAccessModule,
-  getAccessibleModules,
-  type AdminRole,
-} from '../rbac/matrix.js';
+import { hasPermission, canAccessModule, getAccessibleModules } from '../rbac/matrix.js';
 import { validateInventoryCsvRows } from '../schemas/inventory-csv.js';
 
 describe('Admin RBAC Permission Matrix', () => {

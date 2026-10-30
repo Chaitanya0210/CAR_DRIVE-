@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserRole } from '@groupdrive/db';
 
 // Zone density defaults in memory / config store
 const DEFAULT_ZONE_THRESHOLDS: Record<string, number> = {
@@ -10,7 +11,7 @@ const DEFAULT_ZONE_THRESHOLDS: Record<string, number> = {
   DEEP_RURAL: 2,
 };
 
-let currentZoneThresholds = { ...DEFAULT_ZONE_THRESHOLDS };
+const currentZoneThresholds = { ...DEFAULT_ZONE_THRESHOLDS };
 
 @Injectable()
 export class AdminService {
@@ -490,7 +491,7 @@ export class AdminService {
   async getUsers(search?: string, role?: string) {
     const users = await this.prisma.user.findMany({
       where: {
-        ...(role ? { role: role as any } : {}),
+        ...(role ? { role: role as UserRole } : {}),
         ...(search
           ? {
               OR: [
@@ -659,7 +660,7 @@ export class AdminService {
   async getAuditLogs(actorType?: string, action?: string, limit = 50) {
     const logs = await this.prisma.auditLog.findMany({
       where: {
-        ...(actorType ? { actorType: actorType as any } : {}),
+        ...(actorType ? { actorType: actorType as UserRole } : {}),
         ...(action ? { action: { contains: action, mode: 'insensitive' } } : {}),
       },
       orderBy: { createdAt: 'desc' },

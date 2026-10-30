@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException, INestApplication } from '@nestjs/common';
+import { ForbiddenException, INestApplication, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AdminPermission } from '@groupdrive/shared';
 import { AppModule } from '../app.module';
 import { AdminService } from '../admin/admin.service';
 import { AdminFinanceService } from '../admin/admin-finance.service';
@@ -39,7 +40,7 @@ describe('Admin RBAC Guard & Backend Admin Endpoints', () => {
   });
 
   describe('RBAC Guard Tests Per Role', () => {
-    function createMockContext(role: string, permission: any) {
+    function createMockContext(role: string, permission: AdminPermission): ExecutionContext {
       reflector.getAllAndOverride = () => permission;
       return {
         getHandler: () => ({}),
@@ -50,7 +51,7 @@ describe('Admin RBAC Guard & Backend Admin Endpoints', () => {
             query: {},
           }),
         }),
-      } as any;
+      } as unknown as ExecutionContext;
     }
 
     it('ADMIN is permitted for all administrative operations', () => {
