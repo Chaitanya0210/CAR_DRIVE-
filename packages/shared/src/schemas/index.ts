@@ -26,9 +26,7 @@ export const SellerRegisterSchema = z.object({
     .min(8, 'Password must be at least 8 characters long')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
-  contactPhone: z
-    .string()
-    .regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit Indian mobile number'),
+  contactPhone: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit Indian mobile number'),
 });
 
 export const SellerLoginSchema = z.object({
@@ -55,9 +53,7 @@ export const SellerKybSubmitSchema = z.object({
 export const CreateGroupSchema = z.object({
   variantId: z.string().min(1, 'Car variant is required'),
   talukaId: z.string().min(1, 'Taluka is required'),
-  pincode: z
-    .string()
-    .regex(/^[1-9][0-9]{5}$/, 'Must be a valid 6-digit Indian Postal PIN code'),
+  pincode: z.string().regex(/^[1-9][0-9]{5}$/, 'Must be a valid 6-digit Indian Postal PIN code'),
   targetBuyers: z.number().int().min(2, 'Group must target at least 2 buyers').max(50),
   deadlineDays: z.number().int().min(1).max(30).default(7),
 });
@@ -71,10 +67,7 @@ export const JoinGroupSchema = z.object({
 export const SubmitQuoteSchema = z.object({
   rfqId: z.string().min(1, 'RFQ ID is required'),
   exShowroomPaise: z.number().int().positive('Ex-showroom must be a positive integer in paise'),
-  batchGroupDiscountPaise: z
-    .number()
-    .int()
-    .nonnegative('Discount must be non-negative in paise'),
+  batchGroupDiscountPaise: z.number().int().nonnegative('Discount must be non-negative in paise'),
   dealerLogisticsToZonePaise: z
     .number()
     .int()
@@ -106,5 +99,10 @@ export const ZoneLookupSchema = z.object({
   stateId: z.string().optional(),
   districtId: z.string().optional(),
   talukaId: z.string().optional(),
-  pincode: z.string().regex(/^[1-9][0-9]{5}$/).optional(),
+  pincode: z
+    .string()
+    .regex(/^[1-9][0-9]{5}$/)
+    .optional(),
 });
+
+export * from './inventory-csv.js';
