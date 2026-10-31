@@ -111,7 +111,7 @@ describe('Financial & Auction Concurrency Suite', () => {
       data: {
         groupId: group.id,
         rfqNumber: `RFQ-RACE-${Date.now()}`,
-        status: RfqStatus.BIDDING_OPEN,
+        status: RfqStatus.SEALED_BIDDING,
         bidWindowClosesAt: closeTimestamp,
       },
     });
@@ -135,12 +135,12 @@ describe('Financial & Auction Concurrency Suite', () => {
       },
     });
 
-    // Worker A: advances RFQ status to QUOTES_CLOSED right as window elapses
+    // Worker A: advances RFQ status to EVALUATION right as window elapses
     const closeTask = (async () => {
       await prisma.rFQ.update({
         where: { id: rfq.id },
         data: {
-          status: RfqStatus.QUOTES_CLOSED,
+          status: RfqStatus.EVALUATION,
           bidWindowClosesAt: new Date(Date.now() - 1000), // closed 1 sec ago
         },
       });

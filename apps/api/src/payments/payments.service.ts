@@ -5,11 +5,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { LedgerAccountType } from '@groupdrive/db';
 import {
   calculatePlatformCommission,
   calculateRefund,
   assertLedgerBalanced,
-  LedgerAccountType,
 } from '@groupdrive/shared';
 
 export interface WebhookEventPayload {
