@@ -9,6 +9,7 @@ import { SellersModule } from './sellers/sellers.module';
 import { AdvisorModule } from './advisor/advisor.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './common/health/health.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HealthModule } from './common/health/health.module';
     AdvisorModule,
     NotificationsModule,
     HealthModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

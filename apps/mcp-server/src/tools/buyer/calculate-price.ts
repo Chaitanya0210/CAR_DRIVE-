@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { AuthContext } from '../../auth/tokens.js';
-import { calculateLandedCost } from '@groupdrive/shared';
+import { calculateLandedCost, roundBasisPoints } from '@groupdrive/shared';
 
 export const calculateOnRoadPriceSchema = z.object({
   ex_showroom_paise: z
@@ -47,7 +47,7 @@ export async function handleCalculateOnRoadPrice(
     taxRatePercent = params.state_code.toUpperCase() === 'MP' ? 9.0 : 11.0;
   }
 
-  const insuranceEstimatePaise = Math.round(params.ex_showroom_paise * 0.035);
+  const insuranceEstimatePaise = roundBasisPoints(params.ex_showroom_paise, 350);
   const fastagRegCessPaise = 250000; // ₹2,500
 
   const landed = calculateLandedCost({

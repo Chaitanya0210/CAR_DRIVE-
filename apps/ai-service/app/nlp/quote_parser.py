@@ -72,8 +72,8 @@ class QuoteParser:
             accessories = int(acc_match.group(1))
             confidences["accessories"] = 0.85
 
-        # 5. Insurance & RTO
-        insurance = int(ex_showroom * 0.04)  # rough 4% default
+        # 5. Insurance & RTO (integer basis points: 400 bps / 1200 bps)
+        insurance = (ex_showroom * 4) // 100  # rough 4% default
         ins_match = re.search(r"insurance[:\s=₹rs.]*(\d{4,6})", t)
         if ins_match:
             insurance = int(ins_match.group(1))
@@ -81,7 +81,7 @@ class QuoteParser:
         else:
             confidences["insurance"] = 0.60
 
-        rto = int(ex_showroom * 0.12)  # rough 12% default
+        rto = (ex_showroom * 12) // 100  # rough 12% default
         rto_match = re.search(r"(?:rto|road\s+tax|registration)[:\s=₹rs.]*(\d{4,6})", t)
         if rto_match:
             rto = int(rto_match.group(1))

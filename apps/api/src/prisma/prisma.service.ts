@@ -64,6 +64,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get booking() {
     return prisma.booking;
   }
+  get payment() {
+    return prisma.payment;
+  }
   get settlement() {
     return prisma.settlement;
   }
@@ -105,5 +108,11 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
   get $queryRawUnsafe() {
     return prisma.$queryRawUnsafe.bind(prisma);
+  }
+  get $disconnect() {
+    return prisma.$disconnect.bind(prisma);
+  }
+  get $connect() {
+    return prisma.$connect.bind(prisma);
   }
 }

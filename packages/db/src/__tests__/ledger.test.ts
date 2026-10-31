@@ -10,6 +10,14 @@ describe('LedgerEntry Append-Only Constraint', () => {
   });
 
   afterAll(async () => {
+    // Safely cleanup temporary test entries so ledger reconciliation remains clean
+    await prisma.$executeRawUnsafe(
+      `DROP TRIGGER IF EXISTS trg_ledger_entry_append_only ON "LedgerEntry";`,
+    );
+    await prisma.ledgerEntry.deleteMany({
+      where: { actorId: { in: ['test-user-id', 'test-seller-id'] } },
+    });
+    await applyDatabaseTriggers(prisma);
     await prisma.$disconnect();
   });
 
@@ -49,7 +57,7 @@ describe('LedgerEntry Append-Only Constraint', () => {
       prisma.ledgerEntry.update({
         where: { id: entry.id },
         data: { narration: 'Tampered narration' },
-      })
+      }),
     ).rejects.toThrowError(/LedgerEntry is append-only/);
   });
 
@@ -69,7 +77,7 @@ describe('LedgerEntry Append-Only Constraint', () => {
     await expect(
       prisma.ledgerEntry.delete({
         where: { id: entry.id },
-      })
+      }),
     ).rejects.toThrowError(/LedgerEntry is append-only/);
   });
 });

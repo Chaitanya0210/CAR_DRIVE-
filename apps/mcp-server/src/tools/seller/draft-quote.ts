@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { calculatePlatformCommission } from '@groupdrive/shared';
 import { platformStore, PlatformQuote } from '../../store/platform-store.js';
 import { AuthContext } from '../../auth/tokens.js';
 
@@ -55,12 +56,12 @@ export async function handleDraftQuote(params: DraftQuoteInput, auth: AuthContex
     unitMsrpPaise - params.ex_showroom_discount_paise + params.logistics_cost_paise;
   const totalBatchDealValuePaise = grossDealValuePerUnitPaise * cohortQuantity;
 
-  // Platform commission: 1% of final deal value + 18% GST on commission
-  const platformCommissionBasePaise = Math.round(totalBatchDealValuePaise * 0.01);
-  const platformCommissionGstPaise = Math.round(platformCommissionBasePaise * 0.18);
-  const totalPlatformFeePaise = platformCommissionBasePaise + platformCommissionGstPaise;
-
-  const netDealerPayoutBatchPaise = totalBatchDealValuePaise - totalPlatformFeePaise;
+  // Platform commission: exactly 1% of final deal value + 18% GST on commission via basis points
+  const commSplit = calculatePlatformCommission(totalBatchDealValuePaise);
+  const platformCommissionBasePaise = commSplit.commissionPaise;
+  const platformCommissionGstPaise = commSplit.gstPaise;
+  const totalPlatformFeePaise = commSplit.totalPlatformFeePaise;
+  const netDealerPayoutBatchPaise = commSplit.netDealerPayoutPaise;
 
   const draftRecord: PlatformQuote = {
     id: draftQuoteId,
