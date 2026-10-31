@@ -35,5 +35,11 @@ jobs:
       - name: Run Type Check
         run: pnpm type-check
 
+      - name: Dependency Security Audit
+        run: pnpm audit --prod --audit-level high
+
       - name: Run Unit & Accessibility Tests
         run: pnpm test
+
+      - name: Run Playwright E2E Golden Path
+        run: pnpm test:e2e

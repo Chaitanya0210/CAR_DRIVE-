@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GroupDrive - Offline Mode</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #FAFAFA;
+      color: #171717;
+      text-align: center;
+    }
+    .card {
+      background: white;
+      border: 1px solid #E5E5E5;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 440px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .badge {
+      display: inline-block;
+      background: #FEF2F2;
+      color: #DC2626;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 12px;
+    }
+    p {
+      font-size: 14px;
+      color: #525252;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: #DC2626;
+      color: white;
+      font-weight: bold;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+    }
+    .help {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #737373;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">OFFLINE MODE • ऑफलाइन मोड</span>
+    <h1>Internet Connection Disconnected</h1>
+    <p>
+      You are currently offline in a low-connectivity rural zone. Your saved buyer cohorts and booked deals remain accessible in local storage.
+    </p>
+    <button class="btn" onclick="window.location.reload()">Retry Connection (पुन्हा प्रयत्न करा)</button>
+    <div class="help">
+      Helpline (Toll-Free): 1800-GD-RURAL (1800-437-8725)
+    </div>
+  </div>
+</body>
+</html>

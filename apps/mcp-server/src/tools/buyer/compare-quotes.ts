@@ -50,7 +50,8 @@ export async function handleCompareQuotes(params: CompareQuotesInput, _auth: Aut
       : 115000000; // ₹11.5L
 
   // Road tax rate (Maharashtra ~11.5% for diesel/petrol)
-  const roadTaxRatePercent = params.buyer_state.toLowerCase().includes('madhya') ? 10.0 : 11.5;
+  const buyerState = params.buyer_state || 'Maharashtra';
+  const roadTaxRatePercent = buyerState.toLowerCase().includes('madhya') ? 10.0 : 11.5;
   const insuranceEstimatePaise = Math.round(baseMserpPaise * 0.035); // ~3.5%
   const fastagCessPaise = 250000; // ₹2,500
 

@@ -488,10 +488,11 @@ export function CarAdvisorChatWidget() {
                 type="submit"
                 disabled={!inputQuery.trim() || loading}
                 data-testid="advisor-send-button"
+                aria-label="Send message to AI Car Advisor"
                 size="sm"
                 className="px-3"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5" aria-hidden="true" />
               </Button>
             </form>
             <p className="text-[9px] text-neutral-400 text-center mt-1.5">
