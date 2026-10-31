@@ -17,4 +17,5 @@ export * from './components/zone-selector';
 export * from './components/quote-comparison-table';
 export * from './components/offer-card';
 export * from './components/empty-state';
+export * from './components/error-state';
 export * from './components/skeleton';

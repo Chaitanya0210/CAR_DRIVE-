@@ -65,11 +65,15 @@ export const OfferCard: React.FC<OfferCardProps> = ({
           loading="lazy"
         />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-600 text-white shadow">
+          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs">
             <Sparkles className="w-3 h-3" aria-hidden="true" />
             Save {savingsPercentage}%
           </span>
-          <Badge variant="neutral" size="sm" className="bg-white/90 backdrop-blur-sm">
+          <Badge
+            variant="neutral"
+            size="sm"
+            className="bg-white/90 backdrop-blur-xs font-semibold text-neutral-800"
+          >
             {conditionLabels[conditionType]}
           </Badge>
         </div>
@@ -78,7 +82,7 @@ export const OfferCard: React.FC<OfferCardProps> = ({
       {/* Body Details */}
       <div className="p-4 flex-1 flex flex-col justify-between gap-3">
         <div>
-          <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+          <div className="flex items-center justify-between text-xs text-neutral-600 font-medium mb-1">
             <span>{manufactureYear} Model</span>
             {odometerKm !== undefined && odometerKm > 0 && (
               <span>{odometerKm.toLocaleString('en-IN')} km run</span>
@@ -87,27 +91,25 @@ export const OfferCard: React.FC<OfferCardProps> = ({
           <h4 className="text-base font-bold text-neutral-900 group-hover:text-primary transition-colors">
             {vehicleName}
           </h4>
-          <p className="text-xs text-neutral-600">{variantDetails}</p>
+          <p className="text-xs text-neutral-700">{variantDetails}</p>
 
-          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-neutral-500">
-            <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" aria-hidden="true" />
-            <span className="truncate">
-              Eligible in: {eligibleStates.join(', ')}
-            </span>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-neutral-600">
+            <MapPin className="w-3.5 h-3.5 text-neutral-600 shrink-0" aria-hidden="true" />
+            <span className="truncate">Eligible in: {eligibleStates.join(', ')}</span>
           </div>
         </div>
 
         {/* Pricing & CTA */}
         <div className="pt-3 border-t border-border flex items-end justify-between gap-2">
           <div>
-            <div className="flex items-center gap-1.5 text-xs text-neutral-400 line-through">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-600 line-through font-medium">
               <span>MSRP: {formatPaise(regularPricePaise)}</span>
             </div>
             <div className="text-lg font-bold text-neutral-900">
               {formatPaise(discountedPricePaise)}
             </div>
-            <div className="text-[11px] font-medium text-emerald-700 flex items-center gap-1">
-              <Tag className="w-3 h-3" aria-hidden="true" />
+            <div className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
+              <Tag className="w-3 h-3 text-emerald-700" aria-hidden="true" />
               <span>Save {formatPaise(savingsPaise)}</span>
             </div>
           </div>
@@ -115,15 +117,15 @@ export const OfferCard: React.FC<OfferCardProps> = ({
           <Button
             size="sm"
             onClick={() => onBookNow?.(id)}
-            className="shrink-0"
+            className="shrink-0 bg-red-600 hover:bg-red-700 text-white font-bold"
           >
             Lock Deal
           </Button>
         </div>
 
         {/* Dealer Tag */}
-        <div className="pt-2 text-[11px] text-neutral-500 flex items-center justify-between border-t border-dashed border-neutral-200">
-          <span className="truncate font-medium text-neutral-700">
+        <div className="pt-2 text-[11px] text-neutral-600 flex items-center justify-between border-t border-dashed border-neutral-200">
+          <span className="truncate font-medium text-neutral-800">
             {dealerName} ({dealerLocation})
           </span>
           {isDealerVerified && <VerifiedBadge size="sm" label="Verified" />}

@@ -50,7 +50,7 @@ export default function SellerDashboardClient() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Dealer state
-  const [kycStatus, setKycStatus] = useState<string>('SUBMITTED'); // or 'VERIFIED'
+  const [kycStatus, setKycStatus] = useState<string>('VERIFIED'); // Default verified, toggleable via UI
   const [stats, setStats] = useState({
     dealershipName: 'Sahyadri Automotive Group',
     primaryZone: 'Baramati / Pune, Maharashtra',

@@ -26,12 +26,10 @@ import {
   QuoteComparisonTable,
   OfferCard,
   EmptyState,
+  ErrorState,
   Skeleton,
 } from '@groupdrive/ui';
-import {
-  Car,
-  Type,
-} from 'lucide-react';
+import { Car, Type } from 'lucide-react';
 
 export default function DesignSystemPage() {
   const { toast } = useToast();
@@ -90,7 +88,7 @@ export default function DesignSystemPage() {
               <h1 className="text-base font-bold text-neutral-900 leading-tight">
                 GroupDrive Design System
               </h1>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-600">
                 Light Mode • WCAG 2.2 AA • 44px Touch Targets
               </p>
             </div>
@@ -119,8 +117,9 @@ export default function DesignSystemPage() {
             <h2 id="tokens-heading" className="text-xl font-bold text-neutral-900">
               1. Brand Palette & Semantic Tokens
             </h2>
-            <p className="text-xs text-neutral-500">
-              Strictly non-reliant: Brand red is isolated from error status (distinct deep crimson #881337).
+            <p className="text-xs text-neutral-600">
+              Strictly non-reliant: Brand red is isolated from error status (distinct deep crimson
+              #881337).
             </p>
           </div>
 
@@ -128,19 +127,19 @@ export default function DesignSystemPage() {
             <div className="p-3 rounded-xl border border-border bg-surface shadow-sm">
               <div className="h-10 rounded-lg bg-primary mb-2 shadow-inner" />
               <div className="text-xs font-bold">Primary Brand</div>
-              <div className="text-[11px] text-neutral-500">#DC2626 (Red 600)</div>
+              <div className="text-[11px] text-neutral-600">#DC2626 (Red 600)</div>
             </div>
 
             <div className="p-3 rounded-xl border border-border bg-surface shadow-sm">
               <div className="h-10 rounded-lg bg-success mb-2 shadow-inner" />
               <div className="text-xs font-bold text-emerald-800">Success</div>
-              <div className="text-[11px] text-neutral-500">#059669 (Emerald)</div>
+              <div className="text-[11px] text-neutral-600">#059669 (Emerald)</div>
             </div>
 
             <div className="p-3 rounded-xl border border-border bg-surface shadow-sm">
               <div className="h-10 rounded-lg bg-warning mb-2 shadow-inner" />
               <div className="text-xs font-bold text-amber-800">Warning</div>
-              <div className="text-[11px] text-neutral-500">#D97706 (Amber)</div>
+              <div className="text-[11px] text-neutral-600">#D97706 (Amber)</div>
             </div>
 
             <div className="p-3 rounded-xl border border-error-border bg-error-light shadow-sm">
@@ -152,19 +151,19 @@ export default function DesignSystemPage() {
             <div className="p-3 rounded-xl border border-border bg-surface shadow-sm">
               <div className="h-10 rounded-lg bg-info mb-2 shadow-inner" />
               <div className="text-xs font-bold text-sky-800">Info</div>
-              <div className="text-[11px] text-neutral-500">#0284C7 (Sky)</div>
+              <div className="text-[11px] text-neutral-600">#0284C7 (Sky)</div>
             </div>
 
             <div className="p-3 rounded-xl border border-border bg-neutral-100 shadow-sm">
               <div className="h-10 rounded-lg bg-neutral-800 mb-2 shadow-inner" />
               <div className="text-xs font-bold text-neutral-900">Neutral 800</div>
-              <div className="text-[11px] text-neutral-500">#1F2937 Text</div>
+              <div className="text-[11px] text-neutral-600">#1F2937 Text</div>
             </div>
           </div>
 
           {/* Typography & Devanagari Specimen */}
           <div className="p-4 rounded-xl border border-border bg-surface-subtle space-y-2">
-            <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+            <h3 className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">
               Devanagari & Multilingual Typography Specimen (Noto Sans + Noto Sans Devanagari)
             </h3>
             <div className="space-y-1">
@@ -187,8 +186,9 @@ export default function DesignSystemPage() {
             <h2 id="buttons-heading" className="text-xl font-bold text-neutral-900">
               2. Buttons (Min 44px Touch Target)
             </h2>
-            <p className="text-xs text-neutral-500">
-              Variants: Primary (Brand Red), Secondary, Outline, Danger/Error, Ghost, and Loading states.
+            <p className="text-xs text-neutral-600">
+              Variants: Primary (Brand Red), Secondary, Outline, Danger/Error, Ghost, and Loading
+              states.
             </p>
           </div>
 
@@ -213,7 +213,7 @@ export default function DesignSystemPage() {
             <h2 id="badges-heading" className="text-xl font-bold text-neutral-900">
               3. Badges & Verified Badges
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Includes VerifiedBadge with official dealership verification mark.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function DesignSystemPage() {
             <h2 id="cards-heading" className="text-xl font-bold text-neutral-900">
               4. Card Components
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Accessible surface containers with header, description, content, and action footers.
             </p>
           </div>
@@ -249,7 +249,8 @@ export default function DesignSystemPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-neutral-600">
-                  4 out of 5 local verified buyers joined. Join now to trigger the sealed reverse auction across all certified dealers in Maharashtra.
+                  4 out of 5 local verified buyers joined. Join now to trigger the sealed reverse
+                  auction across all certified dealers in Maharashtra.
                 </p>
               </CardContent>
               <CardFooter className="justify-between">
@@ -265,12 +266,15 @@ export default function DesignSystemPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-neutral-600">
-                  Quorum reached! Reverse auction is currently active with 3 sealed dealer bids submitted.
+                  Quorum reached! Reverse auction is currently active with 3 sealed dealer bids
+                  submitted.
                 </p>
               </CardContent>
               <CardFooter className="justify-between">
                 <Badge variant="primary">Bidding Active</Badge>
-                <Button size="sm" variant="outline">View RFQ Room</Button>
+                <Button size="sm" variant="outline">
+                  View RFQ Room
+                </Button>
               </CardFooter>
             </Card>
           </div>
@@ -282,8 +286,9 @@ export default function DesignSystemPage() {
             <h2 id="forms-heading" className="text-xl font-bold text-neutral-900">
               5. Form Controls & Deep-Crimson Error States
             </h2>
-            <p className="text-xs text-neutral-500">
-              Errors use a dedicated deep-crimson token (#881337) with alert icon + text for accessibility.
+            <p className="text-xs text-neutral-600">
+              Errors use a dedicated deep-crimson token (#881337) with alert icon + text for
+              accessibility.
             </p>
           </div>
 
@@ -320,7 +325,7 @@ export default function DesignSystemPage() {
               <h3 className="text-sm font-bold text-neutral-900">
                 Phone OTP Verification (6 Digits)
               </h3>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-600">
                 Try entering digits or pasting a 6-digit code.
               </p>
             </div>
@@ -347,7 +352,7 @@ export default function DesignSystemPage() {
               error={otpError}
             />
 
-            <div className="flex items-center justify-between text-xs text-neutral-500 pt-2">
+            <div className="flex items-center justify-between text-xs text-neutral-600 pt-2">
               <span>Code: {otpValue || '------'}</span>
               <Button
                 variant="ghost"
@@ -369,7 +374,7 @@ export default function DesignSystemPage() {
             <h2 id="progress-heading" className="text-xl font-bold text-neutral-900">
               5. Quorum Progress & Delivery Step Tracker
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Aria-compliant indicators for group formation and end-to-end delivery milestones.
             </p>
           </div>
@@ -381,16 +386,16 @@ export default function DesignSystemPage() {
             </div>
 
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
-              <h3 className="text-sm font-semibold text-neutral-700">Completed Quorum (RFQ Triggered)</h3>
+              <h3 className="text-sm font-semibold text-neutral-700">
+                Completed Quorum (RFQ Triggered)
+              </h3>
               <ProgressBar current={5} total={5} label="Tata Nexon Karad Group" />
             </div>
           </div>
 
           {/* Delivery Milestone Tracker */}
-          <div className="p-5 rounded-2xl border border-border bg-surface">
-            <h3 className="text-sm font-bold text-neutral-900 mb-4">
-              Order Fulfillment Lifecycle
-            </h3>
+          <div className="p-5 rounded-2xl border border-border bg-surface overflow-x-auto max-w-full">
+            <h3 className="text-sm font-bold text-neutral-900 mb-4">Order Fulfillment Lifecycle</h3>
             <StepTracker
               steps={[
                 { id: '1', title: 'Group Formed', description: '5/5 buyers' },
@@ -411,20 +416,17 @@ export default function DesignSystemPage() {
             <h2 id="zone-heading" className="text-xl font-bold text-neutral-900">
               6. Cascading Zone Hierarchy (Rural-First)
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               State &gt; District &gt; Taluka &gt; Village/Pincode.
             </p>
           </div>
 
-          <ZoneSelector
-            initialValue={selectedZone}
-            onChange={(sel) => setSelectedZone(sel)}
-          />
+          <ZoneSelector initialValue={selectedZone} onChange={(sel) => setSelectedZone(sel)} />
 
           <div className="text-xs text-neutral-600 bg-neutral-50 p-2.5 rounded-lg border border-border">
             Selected Delivery Target: <strong>{selectedZone.stateId}</strong> &gt;{' '}
-            <strong>{selectedZone.districtId}</strong> &gt;{' '}
-            <strong>{selectedZone.talukaId}</strong> (Pincode: {selectedZone.pincode})
+            <strong>{selectedZone.districtId}</strong> &gt; <strong>{selectedZone.talukaId}</strong>{' '}
+            (Pincode: {selectedZone.pincode})
           </div>
         </section>
 
@@ -434,7 +436,7 @@ export default function DesignSystemPage() {
             <h2 id="quotes-heading" className="text-xl font-bold text-neutral-900">
               7. Normalized Landed Cost Comparison Table
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Landed cost at the buyer&apos;s zone is the ONLY basis for comparison.
             </p>
           </div>
@@ -504,7 +506,7 @@ export default function DesignSystemPage() {
             <h2 id="offers-heading" className="text-xl font-bold text-neutral-900">
               8. Offered Vehicles (Clearance & Demo Stock)
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Secondary marketplace product for heavily discounted inventory.
             </p>
           </div>
@@ -565,7 +567,7 @@ export default function DesignSystemPage() {
             <h2 id="overlays-heading" className="text-xl font-bold text-neutral-900">
               9. Modals & Accessible Toasts
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Accessible dialogs with focus trapping and screen-reader status announcements.
             </p>
           </div>
@@ -664,8 +666,9 @@ export default function DesignSystemPage() {
                 <span>Target Variant:</span>
                 <strong className="text-neutral-900">Maruti Swift ZXi AMT</strong>
               </div>
-              <p className="text-xs text-neutral-500">
-                By joining, you agree to review sealed reverse auction quotes once the window closes.
+              <p className="text-xs text-neutral-600">
+                By joining, you agree to review sealed reverse auction quotes once the window
+                closes.
               </p>
             </div>
           </Modal>
@@ -677,7 +680,7 @@ export default function DesignSystemPage() {
             <h2 id="tabs-heading" className="text-xl font-bold text-neutral-900">
               10. Accessible Tabs
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Keyboard accessible tablist, tab triggers, and panels.
             </p>
           </div>
@@ -692,7 +695,7 @@ export default function DesignSystemPage() {
             <TabContent value="active-groups">
               <div className="p-4 rounded-xl border border-border bg-surface space-y-2">
                 <h3 className="font-bold text-sm text-neutral-900">Live Taluka Groups</h3>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   Showing 3 active groups within 50 km of Baramati Taluka.
                 </p>
               </div>
@@ -701,7 +704,7 @@ export default function DesignSystemPage() {
             <TabContent value="offered-stock">
               <div className="p-4 rounded-xl border border-border bg-surface space-y-2">
                 <h3 className="font-bold text-sm text-neutral-900">Immediate Delivery Stock</h3>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   Showing 12 clearance and demo cars ready for transit.
                 </p>
               </div>
@@ -710,7 +713,7 @@ export default function DesignSystemPage() {
             <TabContent value="past-deals">
               <div className="p-4 rounded-xl border border-border bg-surface space-y-2">
                 <h3 className="font-bold text-sm text-neutral-900">Closed Batch Deals</h3>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   34 vehicles successfully registered and delivered across Pune & Satara.
                 </p>
               </div>
@@ -718,18 +721,18 @@ export default function DesignSystemPage() {
           </Tabs>
         </section>
 
-        {/* Section 10: Empty State & Skeletons */}
+        {/* Section 10: Empty State, Error State & Skeletons */}
         <section aria-labelledby="empty-heading" className="space-y-4">
           <div className="border-b border-border pb-2">
             <h2 id="empty-heading" className="text-xl font-bold text-neutral-900">
-              11. Empty States & Skeletons
+              11. Empty, Error States & Skeletons
             </h2>
-            <p className="text-xs text-neutral-500">
-              Accessible placeholder and empty state patterns.
+            <p className="text-xs text-neutral-600 font-medium">
+              Accessible placeholder, empty state, and resilient error recovery patterns.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <EmptyState
               icon={Car}
               title="No Groups in Wai Taluka Yet"
@@ -744,6 +747,19 @@ export default function DesignSystemPage() {
               }
             />
 
+            <ErrorState
+              title="Taluka RFQ Disconnected"
+              description="Could not reach the local reverse auction coordinator for Baramati. Please verify network connection."
+              retryLabel="Retry Auction Feed"
+              onRetry={() =>
+                toast({
+                  type: 'success',
+                  title: 'Connection Restored',
+                  description: 'Successfully re-synchronized with rural reverse auction nodes.',
+                })
+              }
+            />
+
             <div className="p-6 rounded-2xl border border-border bg-surface space-y-4">
               <div className="flex items-center gap-3">
                 <Skeleton variant="circular" className="w-12 h-12" />
@@ -752,7 +768,7 @@ export default function DesignSystemPage() {
                   <Skeleton variant="text" className="w-1/2 h-3" />
                 </div>
               </div>
-              <Skeleton variant="rectangular" className="w-full h-32" />
+              <Skeleton variant="rectangular" className="w-full h-24" />
               <div className="flex justify-between">
                 <Skeleton variant="text" className="w-24 h-4" />
                 <Skeleton variant="text" className="w-16 h-8" />

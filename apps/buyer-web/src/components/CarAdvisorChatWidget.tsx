@@ -55,8 +55,8 @@ const PRESET_QUERIES = [
   'Mujhe turant kisi support agent se baat karni hai, connect karo please.',
 ];
 
-export function CarAdvisorChatWidget() {
-  const [isOpen, setIsOpen] = useState(true);
+export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [inputQuery, setInputQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [expandedCitationId, setExpandedCitationId] = useState<string | null>(null);
@@ -240,7 +240,7 @@ export function CarAdvisorChatWidget() {
           >
             <Sparkles className="w-5 h-5 animate-pulse text-amber-300" />
             <span>AI Car Advisor</span>
-            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase">
+            <span className="text-[10px] bg-white text-red-700 px-2 py-0.5 rounded-full font-mono uppercase font-bold shadow-xs">
               Hinglish • मराठी
             </span>
           </button>
@@ -261,12 +261,14 @@ export function CarAdvisorChatWidget() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm tracking-tight">GroupDrive Car Advisor</h3>
+                  <h3 className="font-bold text-sm tracking-tight text-white">
+                    GroupDrive Car Advisor
+                  </h3>
                   <Badge variant="success" className="text-[9px] py-0 px-1.5">
                     Verified RAG
                   </Badge>
                 </div>
-                <p className="text-[11px] text-neutral-400">
+                <p className="text-[11px] text-neutral-300 font-medium">
                   Rural-First Guidance • Hinglish, मराठी & हिंदी
                 </p>
               </div>
@@ -282,7 +284,7 @@ export function CarAdvisorChatWidget() {
 
           {/* Quick Query Pills */}
           <div className="bg-neutral-50 px-3 py-2 border-b border-neutral-100 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
-            <span className="text-neutral-400 font-semibold uppercase text-[10px] shrink-0 pl-1">
+            <span className="text-neutral-700 font-bold uppercase text-[10px] shrink-0 pl-1">
               Try:
             </span>
             {PRESET_QUERIES.map((q, idx) => (
@@ -305,7 +307,7 @@ export function CarAdvisorChatWidget() {
                 className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 {/* Sender Tag */}
-                <div className="text-[10px] text-neutral-400 mb-1 px-1 flex items-center gap-1.5">
+                <div className="text-[10px] text-neutral-600 font-medium mb-1 px-1 flex items-center gap-1.5">
                   <span>{msg.sender === 'user' ? 'You' : 'GroupDrive Advisor'}</span>
                   <span>•</span>
                   <span>{msg.timestamp}</span>
@@ -495,7 +497,7 @@ export function CarAdvisorChatWidget() {
                 <Send className="w-3.5 h-3.5" aria-hidden="true" />
               </Button>
             </form>
-            <p className="text-[9px] text-neutral-400 text-center mt-1.5">
+            <p className="text-[10px] text-neutral-600 font-medium text-center mt-1.5">
               *All savings indicative based on reverse-auction quotes. Zero platform fees for
               buyers.
             </p>

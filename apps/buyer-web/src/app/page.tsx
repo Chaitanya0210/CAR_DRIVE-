@@ -1,14 +1,25 @@
 'use client';
 
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Badge, VerifiedBadge } from '@groupdrive/ui';
-import { ArrowRight, ShieldCheck, Truck, Users, Sparkles, Download } from 'lucide-react';
+import {
+  ArrowRight,
+  ShieldCheck,
+  Truck,
+  Users,
+  Sparkles,
+  Download,
+  HelpCircle,
+} from 'lucide-react';
 import { CarAdvisorChatWidget } from '../components/CarAdvisorChatWidget';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { OnboardingTour } from '../components/OnboardingTour';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const [showTour, setShowTour] = useState(false);
 
   return (
     <main className="min-h-screen flex flex-col justify-between p-6 sm:p-12 max-w-5xl mx-auto">
@@ -21,7 +32,7 @@ export default function HomePage() {
             <h1 className="text-xl font-black text-neutral-900 tracking-tight">
               {t('brand_name')}
             </h1>
-            <p className="text-xs text-neutral-500">ग्रुपड्राइव • भारत</p>
+            <p className="text-xs text-neutral-600 font-medium">ग्रुपड्राइव • भारत</p>
           </div>
         </div>
 
@@ -29,13 +40,24 @@ export default function HomePage() {
           {/* Interactive Multi-language Switcher */}
           <LanguageSwitcher />
 
+          {/* How It Works Button (Triggers 3-step walkthrough) */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-neutral-700 hover:text-neutral-900"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
+            <span>{t('how_it_works')}</span>
+          </Button>
+
           <Link href="/advisor">
             <Button
               variant="outline"
               size="sm"
               className="flex items-center gap-1.5 text-xs font-semibold"
             >
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <Sparkles className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
               <span>{t('ai_advisor_btn')}</span>
             </Button>
           </Link>
@@ -52,7 +74,7 @@ export default function HomePage() {
           <Badge variant="primary">{t('badge_group_buying')}</Badge>
           <VerifiedBadge label={t('badge_auction_enabled')} />
           <Badge variant="neutral">{t('badge_rural_zones')}</Badge>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+          <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-300">
             {t('savings_badge')}
           </span>
         </div>
@@ -62,17 +84,28 @@ export default function HomePage() {
           <span className="text-primary">{t('hero_highlight')}</span>
         </h2>
 
-        <p className="text-base sm:text-lg text-neutral-600 max-w-2xl leading-relaxed">
+        <p className="text-base sm:text-lg text-neutral-700 max-w-2xl leading-relaxed">
           {t('hero_subtitle')}
         </p>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4">
           <Link href="/design" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold"
+            >
               {t('explore_design')}
               <ArrowRight className="w-5 h-5" aria-hidden="true" />
             </Button>
           </Link>
+
+          <button
+            onClick={() => setShowTour(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-neutral-300 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 transition-colors focus-visible:ring-2 focus-visible:ring-red-600"
+          >
+            <HelpCircle className="w-4 h-4 text-primary" aria-hidden="true" />
+            <span>{t('how_it_works')} (3 Steps)</span>
+          </button>
 
           <button
             onClick={() => {
@@ -80,9 +113,9 @@ export default function HomePage() {
                 alert('GroupDrive PWA installed and offline-cached for rural connectivity.');
               }
             }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-neutral-300 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-neutral-300 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 transition-colors focus-visible:ring-2 focus-visible:ring-red-600"
           >
-            <Download className="w-4 h-4 text-primary" />
+            <Download className="w-4 h-4 text-primary" aria-hidden="true" />
             <span>{t('pwa_install_btn')}</span>
           </button>
         </div>
@@ -91,33 +124,36 @@ export default function HomePage() {
           <div className="p-4 rounded-xl border border-border bg-surface-subtle">
             <Users className="w-5 h-5 text-primary mb-2" aria-hidden="true" />
             <h3 className="font-bold text-neutral-900 text-sm">{t('card_quorum_title')}</h3>
-            <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{t('card_quorum_desc')}</p>
+            <p className="text-xs text-neutral-600 mt-1 leading-relaxed">{t('card_quorum_desc')}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-surface-subtle">
             <ShieldCheck className="w-5 h-5 text-emerald-600 mb-2" aria-hidden="true" />
             <h3 className="font-bold text-neutral-900 text-sm">{t('card_auction_title')}</h3>
-            <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+            <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
               {t('card_auction_desc')}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-surface-subtle">
-            <Truck className="w-5 h-5 text-info mb-2" aria-hidden="true" />
+            <Truck className="w-5 h-5 text-info-dark mb-2" aria-hidden="true" />
             <h3 className="font-bold text-neutral-900 text-sm">{t('card_landed_title')}</h3>
-            <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{t('card_landed_desc')}</p>
+            <p className="text-xs text-neutral-600 mt-1 leading-relaxed">{t('card_landed_desc')}</p>
           </div>
         </div>
       </section>
 
-      <footer className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-2">
+      <footer className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-600 gap-2">
         <p>{t('footer_copyright')}</p>
         <div className="flex gap-4 items-center">
-          <span className="font-semibold text-neutral-600">English • हिंदी • मराठी</span>
+          <span className="font-semibold text-neutral-700">English • हिंदी • मराठी</span>
           <span>•</span>
           <span>{t('footer_standards')}</span>
         </div>
       </footer>
+
+      {/* First-Run Onboarding Walkthrough Flow */}
+      <OnboardingTour forceOpen={showTour} onClose={() => setShowTour(false)} />
 
       {/* Floating Multilingual RAG Car Advisor Widget */}
       <CarAdvisorChatWidget />

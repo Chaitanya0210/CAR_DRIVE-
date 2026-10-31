@@ -579,24 +579,26 @@ export default function AdminDashboardClient() {
               G
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-black text-neutral-900 tracking-tight">GroupDrive</h1>
                 <Badge variant="primary" size="sm">
                   Admin Console
                 </Badge>
-                <span className="text-xs text-neutral-400">• India Rural Operations</span>
+                <span className="text-xs text-neutral-600 font-semibold">
+                  • India Rural Operations
+                </span>
               </div>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-600">
                 Reverse Auction Governance, KYB Verification & Financial Ledger
               </p>
             </div>
           </div>
 
           {/* Role Switcher Bar */}
-          <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-xl border border-neutral-200 self-start md:self-auto">
-            <span className="text-xs font-semibold text-neutral-600 px-2 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-neutral-500" />
-              Active Role:
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-neutral-100 p-1 rounded-xl border border-neutral-200 self-start md:self-auto max-w-full overflow-x-auto no-scrollbar">
+            <span className="text-xs font-semibold text-neutral-700 px-1 sm:px-2 flex items-center gap-1 shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5 text-neutral-600" />
+              Role:
             </span>
             {(['ADMIN', 'SUPPORT', 'FINANCE', 'CATALOG'] as AdminRole[]).map((role) => {
               const isSelected = activeRole === role;
@@ -604,7 +606,7 @@ export default function AdminDashboardClient() {
                 <button
                   key={role}
                   onClick={() => setActiveRole(role)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
                     isSelected
                       ? role === 'ADMIN'
                         ? 'bg-primary text-white shadow-sm'
@@ -613,7 +615,7 @@ export default function AdminDashboardClient() {
                           : role === 'FINANCE'
                             ? 'bg-emerald-700 text-white shadow-sm'
                             : 'bg-amber-600 text-white shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
+                      : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-200/60'
                   }`}
                 >
                   {role}
@@ -624,7 +626,7 @@ export default function AdminDashboardClient() {
         </div>
 
         {/* Horizontal Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-neutral-100 flex items-center gap-1 overflow-x-auto py-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-neutral-100 flex items-center gap-1 overflow-x-auto py-1 max-w-full no-scrollbar">
           {MODULE_DEFINITIONS.map((mod) => {
             const hasAccess = canAccessModule(activeRole, mod.id);
             const isCurrent = activeModule === mod.id;
@@ -958,29 +960,33 @@ export default function AdminDashboardClient() {
                       <div className="text-xs text-neutral-600">
                         {offer.variant} ({offer.manufactureYear})
                       </div>
-                      <div className="text-[11px] text-neutral-400 font-mono mt-1">
+                      <div className="text-[11px] text-neutral-600 font-mono font-medium mt-1">
                         VIN: {offer.vin}
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <div className="text-neutral-400 text-[10px]">Odometer</div>
+                          <div className="text-neutral-600 font-medium text-[10px]">Odometer</div>
                           <div className="font-bold text-neutral-800">{offer.odometerKm} km</div>
                         </div>
                         <div>
-                          <div className="text-neutral-400 text-[10px]">Discount</div>
-                          <div className="font-bold text-emerald-700">
+                          <div className="text-neutral-600 font-medium text-[10px]">Discount</div>
+                          <div className="font-bold text-emerald-800">
                             {offer.discountPercent}% OFF
                           </div>
                         </div>
                         <div>
-                          <div className="text-neutral-400 text-[10px]">Regular Price</div>
-                          <div className="line-through text-neutral-500">
+                          <div className="text-neutral-600 font-medium text-[10px]">
+                            Regular Price
+                          </div>
+                          <div className="line-through text-neutral-600">
                             ₹{(offer.regularPriceInr / 100000).toFixed(2)}L
                           </div>
                         </div>
                         <div>
-                          <div className="text-neutral-400 text-[10px]">Offer Price</div>
+                          <div className="text-neutral-600 font-medium text-[10px]">
+                            Offer Price
+                          </div>
                           <div className="font-black text-neutral-900">
                             ₹{(offer.discountedPriceInr / 100000).toFixed(2)}L
                           </div>
