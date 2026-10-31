@@ -100,6 +100,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get $executeRawUnsafe() {
     return prisma.$executeRawUnsafe.bind(prisma);
   }
+  get $queryRaw() {
+    return prisma.$queryRaw.bind(prisma);
+  }
   get $queryRawUnsafe() {
     return prisma.$queryRawUnsafe.bind(prisma);
   }

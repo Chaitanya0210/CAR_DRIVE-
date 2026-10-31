@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 HUMAN_REQUEST_PATTERNS = [
-    r"\b(talk|speak)\s+to\s+(a\s+)?(human|agent|person|representative|executive)\b",
+    r"\b(talk|speak)\s+(to|with)\s+(a\s+)?(human|agent|person|representative|executive|customer\s+support)\b",
     r"\bconnect\s+(me\s+)?to\s+(an?\s+)?(agent|human|support|executive)\b",
     r"\bcall\s+customer\s+(care|support)\b",
     r"\bcustomer\s+care\s+(number|phone|contact)\b",
@@ -16,6 +16,7 @@ HUMAN_REQUEST_PATTERNS = [
     r"\bsupport\s+team\s+se\s+connect\b",
     r"\bफोन\s+लावा\b",
     r"\bमाणसाशी\s+बोलायचे\b",
+    r"\bअधिकाऱ्याशी\s+(बोलायचे|बोलणे|संपर्क)\b",
     r"\bअधिकारी\s+शी\s+बात\b",
 ]
 

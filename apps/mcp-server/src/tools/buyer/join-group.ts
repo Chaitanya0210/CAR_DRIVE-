@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assertValidTransition, CANONICAL_GROUP_TRANSITIONS } from '@groupdrive/shared';
 import { platformStore } from '../../store/platform-store.js';
 import { AuthContext } from '../../auth/tokens.js';
 import { confirmationManager } from '../../security/confirmation.js';
@@ -103,6 +104,7 @@ export async function handleJoinGroup(params: JoinGroupInput, auth: AuthContext)
 
   let transitionMessage = 'Joined group successfully.';
   if (group.currentSize >= group.targetSize) {
+    assertValidTransition('Group', group.status, 'THRESHOLD_MET', CANONICAL_GROUP_TRANSITIONS);
     group.status = 'THRESHOLD_MET';
     transitionMessage = `Target quorum of ${group.targetSize} reached! Group transitioned to THRESHOLD_MET and RFQ reverse auction is being scheduled.`;
   }

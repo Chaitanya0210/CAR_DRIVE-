@@ -121,6 +121,12 @@ GroupDrive aggregates buyers locally to give collective bargaining power against
 - **Booking Amount**: ₹25,000 per member held pending delivery. The amount is never paid directly to dealer upfront; it is held in secure platform escrow pending physical vehicle handover and inspection.
 - **100% Refund Guarantee**: If the winning dealer withdraws, delays delivery past 30 days of committed SLA, or delivers a damaged vehicle, the buyer receives an immediate 100% full refund with zero cancellation deductions.
 - **Seller Charges**: Sellers pay a one-time onboarding fee of ₹19,999 + GST upon legal KYB approval, plus a 1% commission on delivered vehicle value.
+
+## 4. Financing & Bank Loan Guidelines
+- GroupDrive does not issue bank loans directly or guarantee 100% bank loan approval at fixed interest rates. All vehicle loan approvals, interest rates, and EMI schemes are indicative and strictly subject to bank credit assessment and borrower eligibility.
+
+## 5. Privacy & PII Protection
+- User personal data, mobile phone numbers, and PAN credentials are never shared or processed in public chat. Buyers can view their verified registration status securely from their personal GroupDrive account dashboard.
 """
     },
     {

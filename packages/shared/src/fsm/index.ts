@@ -1,6 +1,8 @@
 import {
   BookingStatus,
+  CanonicalGroupStatus,
   GroupStatus,
+  MoneyState,
   QuoteStatus,
   RfqStatus,
   SellerKybStatus,
@@ -17,17 +19,36 @@ export class IllegalStateTransitionError extends Error {
   }
 }
 
-// 1. Group State Transitions
+// 1. Group State Transitions (DB / Prisma Enum Representation)
 export const GROUP_TRANSITIONS: Record<GroupStatus, readonly GroupStatus[]> = {
   DRAFT: ['FORMING', 'CANCELLED'],
   FORMING: ['QUORUM_REACHED', 'CANCELLED'],
-  QUORUM_REACHED: ['RFQ_ACTIVE', 'CANCELLED'],
+  QUORUM_REACHED: ['RFQ_ACTIVE', 'FORMING', 'CANCELLED'],
   RFQ_ACTIVE: ['VOTING_OPEN', 'CANCELLED'],
   VOTING_OPEN: ['DEAL_LOCKED', 'RFQ_ACTIVE', 'CANCELLED'],
-  DEAL_LOCKED: ['FULFILLMENT', 'CANCELLED'],
+  DEAL_LOCKED: ['FULFILLMENT', 'VOTING_OPEN', 'CANCELLED'],
   FULFILLMENT: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
+};
+
+// 1b. Canonical Group State Transitions (Specification & Platform-Store Representation)
+export const CANONICAL_GROUP_TRANSITIONS: Record<
+  CanonicalGroupStatus,
+  readonly CanonicalGroupStatus[]
+> = {
+  DRAFT: ['OPEN', 'CANCELLED'],
+  OPEN: ['THRESHOLD_MET', 'EXPIRED', 'CANCELLED', 'MERGED'],
+  THRESHOLD_MET: ['RFQ_OPEN', 'OPEN', 'CANCELLED'], // Handle drop below threshold if member leaves
+  RFQ_OPEN: ['QUOTES_CLOSED', 'CANCELLED'],
+  QUOTES_CLOSED: ['VOTING', 'RFQ_OPEN', 'EXPIRED'], // 0 quotes received -> re-run or expire
+  VOTING: ['WINNER_SELECTED', 'RFQ_OPEN', 'CANCELLED'], // Tie-break / majority or re-run
+  WINNER_SELECTED: ['BOOKING', 'VOTING'], // Winning dealer withdraws -> fallback to runner-up
+  BOOKING: ['COMPLETED', 'CANCELLED'],
+  COMPLETED: [],
+  EXPIRED: [],
+  CANCELLED: [],
+  MERGED: [],
 };
 
 // 2. RFQ State Transitions
@@ -68,6 +89,15 @@ export const SELLER_KYB_TRANSITIONS: Record<SellerKybStatus, readonly SellerKybS
   FEE_PENDING: ['ACTIVE'],
   ACTIVE: ['SUSPENDED'],
   SUSPENDED: ['ACTIVE'],
+};
+
+// 6. Money & Escrow State Transitions
+export const MONEY_TRANSITIONS: Record<MoneyState, readonly MoneyState[]> = {
+  INITIATED: ['HELD'],
+  HELD: ['RELEASED', 'REFUNDED', 'DISPUTED'],
+  DISPUTED: ['RELEASED', 'REFUNDED'],
+  RELEASED: [],
+  REFUNDED: [],
 };
 
 export function assertValidTransition<T extends string>(

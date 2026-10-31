@@ -34,8 +34,12 @@ def run_evaluation() -> Dict[str, Any]:
         q_latency = (time.time() - q_start) * 1000.0
 
         # Context chunks from retrieval
-        retrieved_chunks = [c for c in advisor_service.hybrid_retriever.search(item["question"], top_k=3)]
-        context_texts = [c[0].content for c in retrieved_chunks] if retrieved_chunks else [c.snippet for c in res.citations]
+        if res.handoff.needs_handoff and not res.citations:
+            retrieved_chunks = []
+            context_texts = []
+        else:
+            retrieved_chunks = [c for c in advisor_service.hybrid_retriever.search(item["question"], top_k=3)]
+            context_texts = [c[0].content for c in retrieved_chunks] if retrieved_chunks else [c.snippet for c in res.citations]
         
         # Calculate metrics
         faithfulness = calculate_faithfulness(res.answer, context_texts)

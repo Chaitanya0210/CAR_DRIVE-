@@ -7,6 +7,8 @@ import {
   assertValidTransition,
   IllegalStateTransitionError,
   GROUP_TRANSITIONS,
+  CANONICAL_GROUP_TRANSITIONS,
+  MONEY_TRANSITIONS,
   SELLER_KYB_TRANSITIONS,
   RequestOtpSchema,
   CreateGroupSchema,
@@ -44,12 +46,72 @@ describe('State Machine Transitions', () => {
   });
 
   it('throws IllegalStateTransitionError on forbidden transitions', () => {
-    expect(() =>
-      assertValidTransition('Group', 'DRAFT', 'COMPLETED', GROUP_TRANSITIONS),
-    ).toThrow(IllegalStateTransitionError);
+    expect(() => assertValidTransition('Group', 'DRAFT', 'COMPLETED', GROUP_TRANSITIONS)).toThrow(
+      IllegalStateTransitionError,
+    );
 
     expect(() =>
       assertValidTransition('Seller', 'REGISTERED', 'ACTIVE', SELLER_KYB_TRANSITIONS),
+    ).toThrow(IllegalStateTransitionError);
+  });
+
+  it('validates canonical group transitions including edge cases', () => {
+    // Normal forward flow
+    expect(() =>
+      assertValidTransition('CanonicalGroup', 'DRAFT', 'OPEN', CANONICAL_GROUP_TRANSITIONS),
+    ).not.toThrow();
+    expect(() =>
+      assertValidTransition('CanonicalGroup', 'OPEN', 'THRESHOLD_MET', CANONICAL_GROUP_TRANSITIONS),
+    ).not.toThrow();
+
+    // Edge case 1: Quorum drops after threshold met
+    expect(() =>
+      assertValidTransition('CanonicalGroup', 'THRESHOLD_MET', 'OPEN', CANONICAL_GROUP_TRANSITIONS),
+    ).not.toThrow();
+
+    // Edge case 2: 0 quotes received -> auto-extend or re-run
+    expect(() =>
+      assertValidTransition(
+        'CanonicalGroup',
+        'QUOTES_CLOSED',
+        'RFQ_OPEN',
+        CANONICAL_GROUP_TRANSITIONS,
+      ),
+    ).not.toThrow();
+
+    // Edge case 3: Winning dealer withdraws -> fallback to voting runner-up
+    expect(() =>
+      assertValidTransition(
+        'CanonicalGroup',
+        'WINNER_SELECTED',
+        'VOTING',
+        CANONICAL_GROUP_TRANSITIONS,
+      ),
+    ).not.toThrow();
+
+    // Illegal canonical jump throws
+    expect(() =>
+      assertValidTransition('CanonicalGroup', 'OPEN', 'COMPLETED', CANONICAL_GROUP_TRANSITIONS),
+    ).toThrow(IllegalStateTransitionError);
+  });
+
+  it('validates money & escrow transitions under append-only rules', () => {
+    expect(() =>
+      assertValidTransition('Money', 'INITIATED', 'HELD', MONEY_TRANSITIONS),
+    ).not.toThrow();
+    expect(() =>
+      assertValidTransition('Money', 'HELD', 'RELEASED', MONEY_TRANSITIONS),
+    ).not.toThrow();
+    expect(() =>
+      assertValidTransition('Money', 'HELD', 'DISPUTED', MONEY_TRANSITIONS),
+    ).not.toThrow();
+    expect(() =>
+      assertValidTransition('Money', 'DISPUTED', 'REFUNDED', MONEY_TRANSITIONS),
+    ).not.toThrow();
+
+    // Cannot transition directly from INITIATED to RELEASED
+    expect(() =>
+      assertValidTransition('Money', 'INITIATED', 'RELEASED', MONEY_TRANSITIONS),
     ).toThrow(IllegalStateTransitionError);
   });
 });

@@ -1,9 +1,10 @@
 {
   "name": "@groupdrive/db",
   "version": "0.1.0",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc src/index.ts --outDir dist --declaration",
     "db:server": "node scripts/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
