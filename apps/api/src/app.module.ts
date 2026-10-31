@@ -10,6 +10,7 @@ import { AdvisorModule } from './advisor/advisor.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './common/health/health.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AuthSecurityModule } from './common/auth/auth-security.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { PaymentsModule } from './payments/payments.module';
     NotificationsModule,
     HealthModule,
     PaymentsModule,
+    AuthSecurityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

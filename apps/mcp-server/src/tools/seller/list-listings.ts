@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { platformStore } from '../../store/platform-store.js';
-import { AuthContext } from '../../auth/tokens.js';
+import { AuthContext, ForbiddenError } from '../../auth/tokens.js';
 
 export const listMyListingsSchema = z.object({
   status: z
@@ -14,8 +14,13 @@ export type ListMyListingsInput = z.infer<typeof listMyListingsSchema>;
 export async function handleListMyListings(params: ListMyListingsInput, auth: AuthContext) {
   let listings = Array.from(platformStore.listings.values());
 
-  // Filter to current dealership if authenticated as seller
-  if (auth.dealershipId) {
+  // Enforce tenant boundary: sellers can only inspect their own listings
+  if (auth.role === 'SELLER') {
+    if (!auth.dealershipId) {
+      throw new ForbiddenError(
+        'Access denied: Seller session missing authorized dealership association.',
+      );
+    }
     listings = listings.filter((l) => l.dealerId === auth.dealershipId);
   }
 

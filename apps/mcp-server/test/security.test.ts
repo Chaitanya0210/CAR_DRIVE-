@@ -7,6 +7,7 @@ import { confirmationManager, ConfirmationTokenManager } from '../src/security/c
 import { SlidingWindowRateLimiter } from '../src/security/rate-limiter.js';
 import { CostBudgetManager } from '../src/security/cost-budget.js';
 import { scanAndSanitizeText } from '../src/security/injection-detector.js';
+import { createScopedToken } from '../src/auth/tokens.js';
 
 function parseCallJson(callResult: unknown): any {
   const res = callResult as { content?: Array<{ type: string; text: string }> };
@@ -299,6 +300,56 @@ describe('MCP Security & Abuse-Prevention Test Suite', () => {
 
       expect(data2.idempotency_cached).toBe(true);
       expect(data2.total_on_road_paise).toBe(data1.total_on_road_paise);
+
+      await client.close();
+    });
+  });
+
+  describe('Insecure Direct Object Reference (IDOR) & Tenant Isolation', () => {
+    it('track_booking blocks Buyer A from accessing Buyer B booking', async () => {
+      const attackerToken = createScopedToken({
+        userId: 'buyer-attacker-999',
+        role: 'BUYER',
+        scopes: ['buyer:read', 'buyer:write'],
+        zoneId: 'zone-baramati',
+      });
+
+      const server = new GroupDriveMcpServer({ authToken: attackerToken });
+      const client = new Client(
+        { name: 'attacker-client', version: '1.0.0' },
+        { capabilities: {} },
+      );
+      const [cTrans, sTrans] = InMemoryTransport.createLinkedPair();
+      await Promise.all([server.server.connect(sTrans), client.connect(cTrans)]);
+
+      // Attempt to access booking owned by buyer-demo-01 (bkg-demo-101)
+      await expect(
+        client.callTool({
+          name: 'track_booking',
+          arguments: { booking_id: 'bkg-demo-101' },
+        }),
+      ).rejects.toThrow(/Access denied|not authorized/);
+
+      await client.close();
+    });
+
+    it('list_my_listings restricts seller to only their own dealership inventory', async () => {
+      const server = new GroupDriveMcpServer({ authToken: 'demo-seller-token' });
+      const client = new Client({ name: 'seller-client', version: '1.0.0' }, { capabilities: {} });
+      const [cTrans, sTrans] = InMemoryTransport.createLinkedPair();
+      await Promise.all([server.server.connect(sTrans), client.connect(cTrans)]);
+
+      const result = await client.callTool({
+        name: 'list_my_listings',
+        arguments: {},
+      });
+      const data = parseCallJson(result);
+
+      expect(data.dealership_id).toBe('dealer-pune-mahindra');
+      for (const item of data.listings) {
+        const l = platformStore.listings.get(item.listing_id);
+        expect(l?.dealerId).toBe('dealer-pune-mahindra');
+      }
 
       await client.close();
     });

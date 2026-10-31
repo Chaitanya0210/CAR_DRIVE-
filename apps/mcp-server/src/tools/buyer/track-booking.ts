@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { platformStore } from '../../store/platform-store.js';
-import { AuthContext } from '../../auth/tokens.js';
+import { AuthContext, ForbiddenError } from '../../auth/tokens.js';
 
 export const trackBookingSchema = z.object({
   booking_id: z
@@ -11,10 +11,17 @@ export const trackBookingSchema = z.object({
 
 export type TrackBookingInput = z.infer<typeof trackBookingSchema>;
 
-export async function handleTrackBooking(params: TrackBookingInput, _auth: AuthContext) {
+export async function handleTrackBooking(params: TrackBookingInput, auth: AuthContext) {
   const b = platformStore.bookings.get(params.booking_id);
   if (!b) {
     throw new Error(`Booking not found with ID '${params.booking_id}'`);
+  }
+
+  // IDOR Protection: Buyers can only view their own bookings; Admins have oversight
+  if (auth.role !== 'ADMIN' && b.userId !== auth.userId) {
+    throw new ForbiddenError(
+      `Access denied: You are not authorized to view booking order '${params.booking_id}'.`,
+    );
   }
 
   const group = platformStore.groups.get(b.groupId);

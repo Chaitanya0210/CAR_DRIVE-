@@ -162,6 +162,14 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  body-parser: '>=1.20.3'
+  send: '>=0.19.0'
+  serve-static: '>=1.16.0'
+  express: '>=4.21.2'
+  cookie: '>=0.7.2'
+  path-to-regexp: '>=0.1.12'
+
 importers:
 
   .:
@@ -3062,7 +3070,7 @@ packages:
     resolution: {integrity: sha512-U1ScocxDD9WI09LaBVypvNkOtNR5yWAmZLkuKJdAzIchA4YKFYF6GT5IKER7epG58oXtjvGlV0/6ii0F83EyZg==}
     engines: {node: '>= 16'}
     peerDependencies:
-      express: '>= 4.11'
+      express: '>=4.21.2'
 
   express@4.22.1:
     resolution: {integrity: sha512-F2X8g9P1X7uCPZMA3MVf9wcTqlyNp7IhH5qPCI0izhaOIYXaW9L535tGA3qmjRzpH+bZczqq7hVKxTR4NWnu+g==}

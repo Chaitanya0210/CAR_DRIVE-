@@ -19,6 +19,10 @@ PII_PATTERNS = [
     
     # 5. Bank Account Numbers (9 to 18 consecutive digits with 'ac' or 'account' context)
     (r"(?:a/c|ac|account\s*(?:no|number)?[:\s]*)(\d{9,18})\b", "[REDACTED_ACCOUNT]"),
+    
+    # 6. Auth Tokens & JWTs
+    (r"\b(?:Bearer\s+)?(eyJ[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+)\b", "[REDACTED_JWT_TOKEN]"),
+    (r"\bgd_(?:buyer|seller|admin|conf)_[a-f0-9]{24,64}\b", "[REDACTED_SECRET_TOKEN]"),
 ]
 
 def redact_pii(text: str) -> str:

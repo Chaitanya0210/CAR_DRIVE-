@@ -1,35 +1,25 @@
-import { Controller, Get, Post, Body, Query, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Headers, UseGuards, Req } from '@nestjs/common';
 import { SellerAnalyticsService } from './seller-analytics.service';
+import { SellerAuthGuard } from '../common/guards/seller-auth.guard';
 
 @Controller('sellers')
+@UseGuards(SellerAuthGuard)
 export class SellerAnalyticsController {
   constructor(private sellerAnalyticsService: SellerAnalyticsService) {}
 
   @Get('me/dashboard-stats')
-  async getDashboardStats(
-    @Query('sellerProfileId') sellerProfileId?: string,
-    @Headers('x-seller-id') sellerHeaderId?: string,
-  ) {
-    return this.sellerAnalyticsService.getDashboardStats(sellerProfileId || sellerHeaderId);
+  async getDashboardStats(@Req() req: any) {
+    return this.sellerAnalyticsService.getDashboardStats(req.sellerId);
   }
 
   @Get('me/territory-demand')
-  async getTerritoryDemand(
-    @Query('sellerProfileId') sellerProfileId?: string,
-    @Headers('x-seller-id') sellerHeaderId?: string,
-  ) {
-    return this.sellerAnalyticsService.getTerritoryDemand(sellerProfileId || sellerHeaderId);
+  async getTerritoryDemand(@Req() req: any) {
+    return this.sellerAnalyticsService.getTerritoryDemand(req.sellerId);
   }
 
   @Post('me/inventory/import-csv')
-  async importInventoryCsv(
-    @Body('rows') rows: Array<Record<string, unknown>>,
-    @Body('sellerProfileId') sellerProfileId?: string,
-    @Headers('x-seller-id') sellerHeaderId?: string,
-  ) {
-    const seller = await this.sellerAnalyticsService.getSellerProfile(
-      sellerProfileId || sellerHeaderId,
-    );
+  async importInventoryCsv(@Req() req: any, @Body('rows') rows: Array<Record<string, unknown>>) {
+    const seller = await this.sellerAnalyticsService.getSellerProfile(req.sellerId);
     return this.sellerAnalyticsService.importInventoryCsv(seller.id, rows || []);
   }
 }
