@@ -1,180 +1,220 @@
-# GroupDrive State Machines Specification & Transition Tables
+# 🔄 GroupDrive State Machines & Lifecycle Transition Specifications
 
-This document defines the formal finite-state machines (FSM) governing all core domain entities in GroupDrive. All state transitions must adhere strictly to the allowed transition tables. Any attempted transition outside these paths throws an `IllegalStateTransitionError` and is rejected with an HTTP 400 Bad Request.
+This document defines the formal finite-state machines (FSM) governing all core domain entities in GroupDrive. All state transitions must adhere strictly to these defined transition paths. Any attempted transition outside these allowed states throws an `IllegalStateTransitionError` and is rejected with an HTTP 400 Bad Request.
 
 ---
 
-## 1. Group State Machine
+## 1. Group Demand Aggregation State Machine (`GroupStatus`)
 
-Governs the lifecycle of buyer cohorts forming in a specific taluka/cluster.
+Governs the lifecycle of buyer cohorts forming in a specific taluka/cluster from initial draft to quorum, bidding, voting, fulfillment, and completion.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DRAFT
-    DRAFT --> OPEN: Group Launched / Published
-    DRAFT --> CANCELLED: Creator Aborts
-    
-    OPEN --> THRESHOLD_MET: Quorum Size Met
-    OPEN --> EXPIRED: Deadline Passed without Quorum
-    OPEN --> CANCELLED: Admin / Creator Cancelled
-    OPEN --> MERGED: Merged into Adjacent Cluster
-    
-    THRESHOLD_MET --> RFQ_OPEN: Scheduled Job Opens Sealed Auction
-    THRESHOLD_MET --> OPEN: Member Withdrew (Quorum Drops)
-    THRESHOLD_MET --> CANCELLED: Cancelled
-    
-    RFQ_OPEN --> QUOTES_CLOSED: 48h Window Expires
-    RFQ_OPEN --> CANCELLED: Platform Abort
-    
-    QUOTES_CLOSED --> VOTING: Quotes Unmasked & Normalized
-    QUOTES_CLOSED --> RFQ_OPEN: Zero Quotes Received (Auto-Extend)
-    QUOTES_CLOSED --> EXPIRED: No Quotes after Extension
-    
-    VOTING --> WINNER_SELECTED: Majority / Tie-Breaker Vote Confirmed
-    VOTING --> RFQ_OPEN: Re-Run Auction (Cohort Rejects All)
-    VOTING --> CANCELLED: Cancelled
-    
-    WINNER_SELECTED --> BOOKING: Winning Dealer Locked, Deposit Window Open
-    WINNER_SELECTED --> VOTING: Winning Dealer Withdraws (Fallback to 2nd)
-    
-    BOOKING --> COMPLETED: All Members Paid Deposit & Allocated
-    BOOKING --> CANCELLED: Dealer Default / Quorum Collapse
-    
+    [*] --> DRAFT: Creator initializes cohort
+    DRAFT --> FORMING: Published & open for taluka buyers
+    DRAFT --> CANCELLED: Creator aborts before publish
+
+    FORMING --> QUORUM_REACHED: Member joins & currentCount >= targetQuorum
+    FORMING --> CANCELLED: Deadline expires without reaching quorum or admin abort
+
+    QUORUM_REACHED --> RFQ_ACTIVE: BullMQ worker triggers 48h sealed reverse auction
+    QUORUM_REACHED --> FORMING: Member withdraws before RFQ launch (count < target)
+    QUORUM_REACHED --> CANCELLED: Admin cancellation / fraud detected
+
+    RFQ_ACTIVE --> VOTING_OPEN: 48h bidding closes; quotes unsealed & normalized
+    RFQ_ACTIVE --> CANCELLED: Force majeure / zero eligible dealers
+
+    VOTING_OPEN --> DEAL_LOCKED: Majority (>50%) vote confirms winning dealer quote
+    VOTING_OPEN --> RFQ_ACTIVE: Tie-break failure / cohort rejects all quotes (re-auction)
+    VOTING_OPEN --> CANCELLED: Cohort abandons vote / deadline passes
+
+    DEAL_LOCKED --> FULFILLMENT: Winning dealer accepts contract; token payments confirmed
+    DEAL_LOCKED --> VOTING_OPEN: Winning dealer defaults / fails KYB (fallback to runner-up)
+    DEAL_LOCKED --> CANCELLED: Wholesale cohort default
+
+    FULFILLMENT --> COMPLETED: 100% of vehicles delivered with verified OTP handover
+    FULFILLMENT --> CANCELLED: Irreparable dealer logistics failure
+
     COMPLETED --> [*]
-    EXPIRED --> [*]
     CANCELLED --> [*]
-    MERGED --> [*]
 ```
 
-### Transition Table: Group
+### Transition Table: `GroupStatus`
 
-| Current State (`From`) | Allowed Next States (`To`) | Trigger / Guard Condition |
-| :--- | :--- | :--- |
-| `DRAFT` | `OPEN`, `CANCELLED` | Validation of brand, model, target size, and delivery zone. |
-| `OPEN` | `THRESHOLD_MET`, `EXPIRED`, `CANCELLED`, `MERGED` | `currentSize >= targetSize` triggers `THRESHOLD_MET`. Deadline triggers `EXPIRED`. Cluster merge triggers `MERGED`. |
-| `THRESHOLD_MET` | `RFQ_OPEN`, `OPEN`, `CANCELLED` | Reverse auction engine triggers `RFQ_OPEN`. If a member withdraws before RFQ opens and `currentSize < targetSize`, status drops back to `OPEN`. |
-| `RFQ_OPEN` | `QUOTES_CLOSED`, `CANCELLED` | BullMQ scheduled worker evaluates 48-hour bidding deadline. |
-| `QUOTES_CLOSED` | `VOTING`, `RFQ_OPEN`, `EXPIRED` | If quotes >= 1, unseal and normalize into `VOTING`. If 0 quotes, extend window or re-run. |
-| `VOTING` | `WINNER_SELECTED`, `RFQ_OPEN`, `CANCELLED` | Voting concludes with winning quote chosen. In case of tie, earliest submitted quote wins. |
-| `WINNER_SELECTED` | `BOOKING`, `VOTING` | If winning dealer withdraws, fallback to runner-up quote. Otherwise, proceed to `BOOKING`. |
-| `BOOKING` | `COMPLETED`, `CANCELLED` | Members complete individual booking deposits. |
-| `COMPLETED` | (None) | Terminal state. |
-| `EXPIRED` | (None) | Terminal state. |
-| `CANCELLED` | (None) | Terminal state. |
-| `MERGED` | (None) | Terminal state. |
+| Current State (`From`) | Allowed Next States (`To`) | Trigger / Guard Condition | Side Effects & Event Dispatches |
+|:---|:---|:---|:---|
+| `DRAFT` | `FORMING`, `CANCELLED` | Variant & zone validated; initiator sets target quorum (2–50). | Publishes group to regional discovery feed. |
+| `FORMING` | `QUORUM_REACHED`, `CANCELLED` | `currentCount >= targetQuorum` triggers `QUORUM_REACHED`. Expiry triggers `CANCELLED`. | Emits `group.quorum_reached` via WebSockets; alerts nearby dealers. |
+| `QUORUM_REACHED` | `RFQ_ACTIVE`, `FORMING`, `CANCELLED` | Scheduled reverse-auction job opens sealed bidding. Member withdrawal reverts to `FORMING`. | Spawns corresponding `RFQ` record in `SEALED_BIDDING` status. |
+| `RFQ_ACTIVE` | `VOTING_OPEN`, `CANCELLED` | 48-hour bidding window expires. At least 1 valid sealed quote received. | Unseals bids, runs Landed Cost Engine, emits `rfq.bids_opened`. |
+| `VOTING_OPEN` | `DEAL_LOCKED`, `RFQ_ACTIVE`, `CANCELLED` | Majority quorum vote (>50%) cast by cohort members. | Awards winning quote, locks pricing contract, requests token hold. |
+| `DEAL_LOCKED` | `FULFILLMENT`, `VOTING_OPEN`, `CANCELLED` | Winning dealer acknowledges batch order; buyer token holds captured. | Creates `Booking` records for all members; begins chassis allocation. |
+| `FULFILLMENT` | `COMPLETED`, `CANCELLED` | All members complete PDI inspection and provide 6-digit delivery OTP. | Triggers double-entry ledger settlement and 1% platform commission. |
+| `COMPLETED` | (None) | Terminal State. | Prompts cohort members for dealer and vehicle reviews. |
+| `CANCELLED` | (None) | Terminal State. | Releases all escrow token holds and refunds any charges. |
 
 ---
 
-## 2. RFQ & Sealed Bidding State Machine
+## 2. RFQ & Sealed Bidding State Machine (`RfqStatus`)
 
-Governs the dealer reverse-auction window.
+Governs the dealer reverse-auction window, quote encryption, normalization, and award.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> OPEN: Group Hits Quorum Threshold
-    OPEN --> OPEN: Dealer Revises Quote (Before Window Close)
-    OPEN --> CLOSED: 48-Hour Bidding Window Closes
-    OPEN --> CANCELLED: Group Cancelled / Threshold Dropped
-    
-    CLOSED --> AWARDED: Winner Selected by Buyer Cohort
-    CLOSED --> OPEN: Zero Bids Extension
-    CLOSED --> CANCELLED: All Quotes Disqualified / Cancelled
-    
+    [*] --> SEALED_BIDDING: Group hits quorum; 48-hour timer starts
+    SEALED_BIDDING --> EVALUATION: 48-hour clock expires; quotes locked
+    SEALED_BIDDING --> CANCELLED: Group cancelled during bidding
+
+    EVALUATION --> VOTING_OPEN: Quotes unsealed; landed costs normalized
+    EVALUATION --> NO_DEAL: Zero quotes received after grace period
+    EVALUATION --> CANCELLED: Disqualification of all quotes
+
+    VOTING_OPEN --> AWARDED: Cohort selects winning dealer quote
+    VOTING_OPEN --> NO_DEAL: Cohort consensus vote rejects all bids
+    VOTING_OPEN --> CANCELLED: Group disbanded
+
     AWARDED --> [*]
+    NO_DEAL --> [*]
     CANCELLED --> [*]
 ```
 
+### Transition Table: `RfqStatus`
+
+| Current State (`From`) | Allowed Next States (`To`) | Trigger / Guard Condition | Side Effects |
+|:---|:---|:---|:---|
+| `SEALED_BIDDING` | `EVALUATION`, `CANCELLED` | BullMQ worker fires at `bidWindowClosesAt`. | Bidding closed to all dealerships. |
+| `EVALUATION` | `VOTING_OPEN`, `NO_DEAL`, `CANCELLED` | Landed cost engine calculates RTO + transit + insurance. If quotes >= 1, `VOTING_OPEN`. | Publishes comparison matrix to cohort. |
+| `VOTING_OPEN` | `AWARDED`, `NO_DEAL`, `CANCELLED` | Voting concludes with single winning quote. | Updates `RFQ.winningQuoteId`; sets `QuoteStatus.ACCEPTED`. |
+| `AWARDED` | (None) | Terminal State. | Batch awarded to winning dealer. |
+| `NO_DEAL` | (None) | Terminal State. | Group initiator notified to re-list or adjust quorum. |
+| `CANCELLED` | (None) | Terminal State. | RFQ archived. |
+
 ---
 
-## 3. Quote State Machine
+## 3. Dealer Quote State Machine (`QuoteStatus`)
 
-Governs dealer bids with sealed privacy and cryptographic integrity.
+Protects quote confidentiality and commercial integrity.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> SEALED: Dealer Submits Quote
-    SEALED --> SEALED: Dealer Revises Quote (Pre-Close)
-    SEALED --> UNMASKED: Bidding Window Closes (Decrypted)
-    SEALED --> REJECTED: Dealer Withdraws
-    
-    UNMASKED --> WINNER: Cohort Selects Dealer Bid
-    UNMASKED --> REJECTED: Cohort Selects Competitor
-    
-    WINNER --> [*]
+    [*] --> SEALED: Dealer submits blind quote with line items
+    SEALED --> SEALED: Dealer submits revised bid (pre-deadline only)
+    SEALED --> UNSEALED: 48-hour RFQ window closes
+    SEALED --> REJECTED: Dealer manually withdraws prior to close
+
+    UNSEALED --> NORMALIZED: Landed cost engine validates RTO & transit
+    NORMALIZED --> ACCEPTED: Cohort votes quote as batch winner
+    NORMALIZED --> REJECTED: Cohort votes for competing quote
+
+    ACCEPTED --> [*]
     REJECTED --> [*]
 ```
 
+### Transition Table: `QuoteStatus`
+
+| Current State (`From`) | Allowed Next States (`To`) | Trigger / Guard Condition | Description |
+|:---|:---|:---|:---|
+| `SEALED` | `SEALED`, `UNSEALED`, `REJECTED` | Revision allowed before deadline. Auto-unsealed at window close. | Blind bid encrypted in PostgreSQL. |
+| `UNSEALED` | `NORMALIZED` | System verifies line items sum to total. | Line-item costs verified. |
+| `NORMALIZED` | `ACCEPTED`, `REJECTED` | Final cohort voting results tally. | Accepted quote forms binding purchase agreement. |
+| `ACCEPTED` | (None) | Terminal State. | Generates individual bookings. |
+| `REJECTED` | (None) | Terminal State. | Quote archived as unselected bid. |
+
 ---
 
-## 4. Booking & Shipment Delivery State Machine
+## 4. Individual Booking & Vehicle Fulfillment (`BookingStatus`)
 
-Governs individual vehicle procurement, logistics tracking, and handover.
+Controls individual car allocation, factory dispatch, and doorstep handover.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ORDER_PLACED: Individual ₹25,000 Deposit Held
-    ORDER_PLACED --> DISPATCHED: Dealer Assigns VIN & Flatbed
-    ORDER_PLACED --> CANCELLED: Dealer Default / Cancellation
+    [*] --> TOKEN_CONFIRMED: Buyer pays ₹10,000 token hold into escrow
+    TOKEN_CONFIRMED --> DEALER_ACCEPTED: Dealer signs allotment confirmation
+    TOKEN_CONFIRMED --> CANCELLED: Buyer cancels before dealer acceptance (100% refund)
+
+    DEALER_ACCEPTED --> CHASSIS_ALLOCATED: Dealer assigns factory VIN & Engine number
+    DEALER_ACCEPTED --> CANCELLED: Dealer unable to supply; token refunded to buyer
+
+    CHASSIS_ALLOCATED --> INVOICED: Commercial tax invoice generated with GST/TCS
+    CHASSIS_ALLOCATED --> CANCELLED: VIN failed pre-dispatch inspection (replacement required)
+
+    INVOICED --> REGISTRATION_COMPLETE: State RTO road tax paid; HSRP number plate assigned
     
-    DISPATCHED --> IN_TRANSIT: Transit Telematics Active
-    DISPATCHED --> CANCELLED: Transit Loss / Incident
+    REGISTRATION_COMPLETE --> DELIVERY_IN_PROGRESS: Loaded onto flat-bed carrier destined for Taluka
     
-    IN_TRANSIT --> ARRIVED_AT_HUB: Arrived at Taluka Delivery Hub
-    IN_TRANSIT --> DISPUTED: Shipment Delay Past SLA
-    
-    ARRIVED_AT_HUB --> DELIVERED: Buyer PDI (<100 km) & OTP Verification
-    ARRIVED_AT_HUB --> DISPUTED: PDI Failure / Damage Reported
-    
-    DELIVERED --> [*]
-    DISPUTED --> DELIVERED: Dispute Resolved & Replaced
-    DISPUTED --> CANCELLED: Order Cancelled & Refunded
+    DELIVERY_IN_PROGRESS --> FULFILLED: Buyer inspects vehicle & submits 6-digit Delivery OTP
+    DELIVERY_IN_PROGRESS --> CANCELLED: In-transit casualty / carrier accident
+
+    FULFILLED --> [*]
     CANCELLED --> [*]
 ```
 
+### Transition Table: `BookingStatus`
+
+| Current State (`From`) | Allowed Next States (`To`) | Trigger / Guard Condition | Side Effects |
+|:---|:---|:---|:---|
+| `TOKEN_CONFIRMED` | `DEALER_ACCEPTED`, `CANCELLED` | Payment gateway webhook verifies ₹10,000 capture. | Creates double-entry escrow hold in `LedgerEntry`. |
+| `DEALER_ACCEPTED` | `CHASSIS_ALLOCATED`, `CANCELLED` | Dealer confirms factory production allocation. | Dispatches SMS status update to buyer. |
+| `CHASSIS_ALLOCATED` | `INVOICED`, `CANCELLED` | Dealer enters valid 17-character VIN. | Locks VIN to buyer profile. |
+| `INVOICED` | `REGISTRATION_COMPLETE` | Tax invoice PDF uploaded with GST line items. | Initiates State RTO tax filing. |
+| `REGISTRATION_COMPLETE` | `DELIVERY_IN_PROGRESS` | RTO registration number & HSRP verified. | Creates `DeliveryShipment` in `DISPATCHED` status. |
+| `DELIVERY_IN_PROGRESS` | `FULFILLED`, `CANCELLED` | Handover confirmed via buyer delivery OTP. | Releases token hold to dealer settlement ledger. |
+| `FULFILLED` | (None) | Terminal State. | Triggers settlement payout calculation. |
+| `CANCELLED` | (None) | Terminal State. | Triggers escrow refund workflow. |
+
 ---
 
-## 5. Seller KYB Verification State Machine
+## 5. Delivery Carrier Tracking (`DeliveryStatus`)
 
-Governs dealer onboarding, document verification, and fee payment gating.
+Tracks physical transport of the vehicle from the dealer's regional stockyard to the buyer's taluka doorstep.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> REGISTERED: Dealership User Signs Up
-    REGISTERED --> KYB_SUBMITTED: GSTIN, PAN, & Dealership Certs Uploaded
-    
-    KYB_SUBMITTED --> VERIFIED: Admin Verifies Business Credentials
-    KYB_SUBMITTED --> REJECTED: Admin Rejects with Mandatory Reason
-    
-    REJECTED --> KYB_SUBMITTED: Dealer Re-uploads Corrected Documents
-    
-    VERIFIED --> ACTIVE: Registration Fee (₹19,999 + GST) Paid
-    
-    ACTIVE --> SUSPENDED: Violation / Fraud Detected
-    SUSPENDED --> ACTIVE: Admin Reinstatement
-    
-    ACTIVE --> [*]
+    [*] --> DISPATCHED: Vehicle loaded onto flat-bed carrier truck
+    DISPATCHED --> IN_TRANSIT: Carrier en route across district highway
+    IN_TRANSIT --> ARRIVED_ZONE: Carrier arrives at buyer's taluka cluster hub
+    ARRIVED_ZONE --> DOORSTEP_DELIVERED: Vehicle handed over at doorstep upon OTP entry
+    DOORSTEP_DELIVERED --> [*]
 ```
 
 ---
 
-## 6. Money & Ledger State Machine
+## 6. Financial Settlement & Dealer Payout (`SettlementStatus`)
 
-Governs all cash movements under the append-only ledger constraint.
+Enforces double-entry financial accounting, 1% platform revenue capture, and dealer bank transfer.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> INITIATED: Payment Gateway Session Created
-    INITIATED --> HELD: Payment Captured (Held Pending Delivery)
-    INITIATED --> FAILED: Payment Aborted / Expired
-    
-    HELD --> RELEASED: Confirmed Delivery (Split Settlement T+1)
-    HELD --> REFUNDED: Order Cancelled / Dealer Default
-    HELD --> DISPUTED: Delivery Disputed by Buyer
-    
-    DISPUTED --> RELEASED: Admin Settlement Resolution
-    DISPUTED --> REFUNDED: Admin Full Refund
-    
-    RELEASED --> [*]
-    REFUNDED --> [*]
-    FAILED --> [*]
+    [*] --> PENDING: Vehicle fulfilled; delivery OTP verified
+    PENDING --> PROCESSED: Payout executed; 1% commission deducted; ledger balanced
+    PENDING --> DISPUTED: Buyer flags defect / dealer claims deduction dispute
+
+    DISPUTED --> PROCESSED: Admin resolves dispute (releases funds or offsets credit)
+    DISPUTED --> PENDING: Dispute resolved in favour of re-inspection
+
+    PROCESSED --> [*]
 ```
+
+---
+
+## 7. State Invariant Enforcement in Code
+
+1. **Transaction Wrapping**: All state transitions that alter financial, membership, or auction status execute inside a PostgreSQL `prisma.$transaction([...])`.
+2. **Transition Guards**: Transition validity is enforced by domain guard functions in `@groupdrive/shared`:
+   ```typescript
+   export function validateGroupTransition(from: GroupStatus, to: GroupStatus): boolean {
+     const allowedTransitions: Record<GroupStatus, GroupStatus[]> = {
+       [GroupStatus.DRAFT]: [GroupStatus.FORMING, GroupStatus.CANCELLED],
+       [GroupStatus.FORMING]: [GroupStatus.QUORUM_REACHED, GroupStatus.CANCELLED],
+       [GroupStatus.QUORUM_REACHED]: [GroupStatus.RFQ_ACTIVE, GroupStatus.FORMING, GroupStatus.CANCELLED],
+       [GroupStatus.RFQ_ACTIVE]: [GroupStatus.VOTING_OPEN, GroupStatus.CANCELLED],
+       [GroupStatus.VOTING_OPEN]: [GroupStatus.DEAL_LOCKED, GroupStatus.RFQ_ACTIVE, GroupStatus.CANCELLED],
+       [GroupStatus.DEAL_LOCKED]: [GroupStatus.FULFILLMENT, GroupStatus.VOTING_OPEN, GroupStatus.CANCELLED],
+       [GroupStatus.FULFILLMENT]: [GroupStatus.COMPLETED, GroupStatus.CANCELLED],
+       [GroupStatus.COMPLETED]: [],
+       [GroupStatus.CANCELLED]: [],
+     };
+     return allowedTransitions[from]?.includes(to) ?? false;
+   }
+   ```
+3. **Audit Trail**: Every state mutation records an immutable entry in the `AuditLog` table containing `actorType`, `actorId`, `previousState`, `newState`, and timestamp.
