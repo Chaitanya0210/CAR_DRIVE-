@@ -85,6 +85,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get review() {
     return prisma.review;
   }
+  get vote() {
+    return prisma.vote;
+  }
+  get quoteLineItem() {
+    return prisma.quoteLineItem;
+  }
   get ledgerEntry() {
     return prisma.ledgerEntry;
   }

@@ -306,7 +306,14 @@ export default function SellerDashboardClient() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <a
+              href="http://localhost:3000/demo"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Demo Hub</span>
+            </a>
             <Button
               variant="outline"
               size="sm"
@@ -817,6 +824,23 @@ export default function SellerDashboardClient() {
           </div>
         )}
       </main>
+
+      {/* Demo Disclaimer Footer */}
+      <footer className="border-t border-border bg-white py-4 mt-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-2">
+          <p>
+            ⚠️ Demo Data: All OEM prices, landed costs, and bids are illustrative evaluation
+            figures.
+          </p>
+          <div className="flex items-center gap-3">
+            <a href="http://localhost:3000/demo" className="text-red-600 hover:underline font-bold">
+              GroupDrive Demo Hub
+            </a>
+            <span>•</span>
+            <span>Dealer Operations Hub</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

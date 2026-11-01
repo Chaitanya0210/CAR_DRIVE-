@@ -40,6 +40,18 @@ export default function HomePage() {
           {/* Interactive Multi-language Switcher */}
           <LanguageSwitcher />
 
+          {/* Guided Demo Button */}
+          <Link href="/demo">
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex items-center gap-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
+              <span>Guided Demo</span>
+            </Button>
+          </Link>
+
           {/* How It Works Button (Triggers 3-step walkthrough) */}
           <Button
             variant="outline"
@@ -144,8 +156,18 @@ export default function HomePage() {
       </section>
 
       <footer className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-600 gap-2">
-        <p>{t('footer_copyright')}</p>
+        <div>
+          <p>{t('footer_copyright')}</p>
+          <p className="text-[11px] text-neutral-400 mt-1">
+            ⚠️ Demo Mode: All catalog specs, ex-showroom prices, and landed costs are illustrative
+            test data.
+          </p>
+        </div>
         <div className="flex gap-4 items-center">
+          <Link href="/demo" className="text-primary hover:underline font-bold">
+            Demo Hub
+          </Link>
+          <span>•</span>
           <span className="font-semibold text-neutral-700">English • हिंदी • मराठी</span>
           <span>•</span>
           <span>{t('footer_standards')}</span>

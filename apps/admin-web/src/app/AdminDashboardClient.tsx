@@ -26,6 +26,7 @@ import {
   FileText,
   Lock,
   Sliders,
+  Sparkles,
 } from 'lucide-react';
 
 interface DealershipItem {
@@ -623,6 +624,15 @@ export default function AdminDashboardClient() {
               );
             })}
           </div>
+
+          {/* Quick Demo Hub Link */}
+          <a
+            href="http://localhost:3000/demo"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 transition-colors shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>Fast-Forward Demo Hub</span>
+          </a>
         </div>
 
         {/* Horizontal Navigation Tabs */}
@@ -1615,6 +1625,23 @@ export default function AdminDashboardClient() {
           </div>
         </Modal>
       )}
+
+      {/* Demo Disclaimer Footer */}
+      <footer className="border-t border-border bg-white py-4 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-2">
+          <p>
+            ⚠️ Demo Environment: All ledger vouchers, KYB registrations, and auction telemetry are
+            illustrative seed records.
+          </p>
+          <div className="flex items-center gap-3">
+            <a href="http://localhost:3000/demo" className="text-red-600 hover:underline font-bold">
+              Fast-Forward Demo Hub
+            </a>
+            <span>•</span>
+            <span>Platform Governance Console</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

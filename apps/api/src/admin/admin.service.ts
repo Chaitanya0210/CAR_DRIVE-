@@ -680,4 +680,507 @@ export class AdminService {
       createdAt: log.createdAt.toISOString(),
     }));
   }
+
+  // ============================================================================
+  // 9. GUIDED DEMO MODE & FAST-FORWARD ENGINE
+  // ============================================================================
+  async getDemoGroups() {
+    const groups = await this.prisma.group.findMany({
+      include: {
+        variant: {
+          include: {
+            carModel: {
+              include: {
+                brand: true,
+              },
+            },
+          },
+        },
+        targetZone: true,
+        memberships: {
+          include: {
+            buyerProfile: true,
+          },
+        },
+        rfq: {
+          include: {
+            quotes: {
+              include: {
+                sellerProfile: true,
+              },
+            },
+            votes: true,
+            winningQuote: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+
+    return groups.map((g) => ({
+      id: g.id,
+      status: g.status,
+      targetCount: g.targetCount,
+      currentCount: g.currentCount,
+      deadline: g.deadline.toISOString(),
+      quorumReachedAt: g.quorumReachedAt?.toISOString() || null,
+      dealLockedAt: g.dealLockedAt?.toISOString() || null,
+      vehicle: {
+        brandName: g.variant.carModel.brand.name,
+        modelName: g.variant.carModel.name,
+        variantName: g.variant.name,
+        fuelType: g.variant.fuelType,
+        transmission: g.variant.transmission,
+        basePricePaise: g.variant.baseExShowroomPaise.toString(),
+      },
+      zone: {
+        id: g.targetZone.id,
+        name: g.targetZone.name,
+        code: g.targetZone.code,
+        densityClass: g.targetZone.densityClass,
+      },
+      members: g.memberships.map((m) => ({
+        id: m.id,
+        buyerName: m.buyerProfile.fullName,
+        phone: m.buyerProfile.pincode,
+        status: m.status,
+      })),
+      rfq: g.rfq
+        ? {
+            id: g.rfq.id,
+            rfqNumber: g.rfq.rfqNumber,
+            status: g.rfq.status,
+            quotesCount: g.rfq.quotes.length,
+            winningQuoteId: g.rfq.winningQuoteId,
+            quotes: g.rfq.quotes.map((q) => ({
+              id: q.id,
+              dealerName: q.sellerProfile.tradeName,
+              totalLandedCostPaise: q.totalLandedCostPaise.toString(),
+              batchGroupDiscountPaise: q.batchGroupDiscountPaise.toString(),
+              deliveryTimelineDays: q.deliveryTimelineDays,
+              isWinning: q.id === g.rfq?.winningQuoteId,
+            })),
+          }
+        : null,
+    }));
+  }
+
+  async fastForwardThreshold(groupId: string) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        variant: { include: { carModel: { include: { brand: true } } } },
+        targetZone: true,
+        memberships: true,
+      },
+    });
+
+    if (!group) throw new NotFoundException('Group not found');
+
+    // 1. If members < targetCount, fill with seeded buyers
+    if (group.currentCount < group.targetCount) {
+      const needed = group.targetCount - group.currentCount;
+      const existingBuyerIds = group.memberships.map((m) => m.buyerProfileId);
+      const availableBuyers = await this.prisma.buyerProfile.findMany({
+        where: { id: { notIn: existingBuyerIds } },
+        take: needed,
+      });
+
+      for (const buyer of availableBuyers) {
+        await this.prisma.membership.create({
+          data: {
+            groupId: group.id,
+            buyerProfileId: buyer.id,
+            tokenPaidPaise: BigInt(500000),
+            status: 'ACTIVE',
+          },
+        });
+      }
+    }
+
+    // 2. Advance group to RFQ_ACTIVE
+    const updatedGroup = await this.prisma.group.update({
+      where: { id: groupId },
+      data: {
+        currentCount: group.targetCount,
+        status: 'RFQ_ACTIVE',
+        quorumReachedAt: new Date(),
+      },
+    });
+
+    // 3. Ensure RFQ exists with at least 2 quotes
+    let rfq = await this.prisma.rFQ.findUnique({ where: { groupId } });
+    if (!rfq) {
+      rfq = await this.prisma.rFQ.create({
+        data: {
+          groupId,
+          rfqNumber: `RFQ-${group.targetZone.code}-${Date.now().toString().slice(-4)}`,
+          status: 'SEALED_BIDDING',
+          bidWindowClosesAt: new Date(Date.now() + 86400000 * 2),
+        },
+      });
+
+      // Find authorized dealers for this brand
+      const dealers = await this.prisma.sellerProfile.findMany({
+        where: {
+          brandAuthorizations: {
+            some: { brandId: group.variant.carModel.brandId },
+          },
+          branches: { some: {} },
+        },
+        include: { branches: true },
+        take: 2,
+      });
+
+      for (let i = 0; i < dealers.length; i++) {
+        const d = dealers[i];
+        const base = BigInt(group.variant.baseExShowroomPaise.toString());
+        const discount = BigInt(Math.round(Number(base) * (0.05 + i * 0.015)));
+        const rto = BigInt(Math.round(Number(base) * 0.12));
+        const insurance = BigInt(5400000);
+        const logistics = BigInt(1200000 + i * 300000);
+        const fastag = BigInt(250000);
+        const landed = base - discount + rto + insurance + logistics + fastag;
+
+        await this.prisma.quote.create({
+          data: {
+            rfqId: rfq.id,
+            sellerProfileId: d.id,
+            branchId: d.branches[0]?.id || d.id,
+            status: 'SEALED',
+            exShowroomPaise: base,
+            batchGroupDiscountPaise: discount,
+            dealerLogisticsToZonePaise: logistics,
+            roadTaxRtoPaise: rto,
+            insuranceEstimatePaise: insurance,
+            fastagRegistrationCessPaise: fastag,
+            tcsPaise: BigInt(0),
+            totalLandedCostPaise: landed,
+            deliveryTimelineDays: 14 + i * 4,
+            validityDate: new Date(Date.now() + 86400000 * 15),
+            notes: `${d.tradeName}: Fast-forward demo quote with exclusive group discount.`,
+          },
+        });
+      }
+    }
+
+    return {
+      success: true,
+      step: 'THRESHOLD_MET_AND_RFQ_OPEN',
+      group: updatedGroup,
+      message: `Group '${group.id.slice(0, 8)}' reached quorum (${group.targetCount}/${group.targetCount})! RFQ bidding is now OPEN.`,
+    };
+  }
+
+  async fastForwardCloseBidding(groupId: string) {
+    const rfq = await this.prisma.rFQ.findUnique({
+      where: { groupId },
+      include: { quotes: true },
+    });
+
+    if (!rfq) throw new NotFoundException('No active RFQ found for this group');
+
+    // 1. Unseal all quotes
+    await this.prisma.quote.updateMany({
+      where: { rfqId: rfq.id },
+      data: { status: 'NORMALIZED' },
+    });
+
+    // 2. Set RFQ & Group to VOTING_OPEN
+    await this.prisma.rFQ.update({
+      where: { id: rfq.id },
+      data: {
+        status: 'VOTING_OPEN',
+        bidWindowClosesAt: new Date(Date.now() - 1000),
+        votingClosesAt: new Date(Date.now() + 86400000 * 2),
+      },
+    });
+
+    const updatedGroup = await this.prisma.group.update({
+      where: { id: groupId },
+      data: { status: 'VOTING_OPEN' },
+    });
+
+    return {
+      success: true,
+      step: 'BIDDING_CLOSED_VOTING_OPEN',
+      group: updatedGroup,
+      quotesCount: rfq.quotes.length,
+      message: `Bidding closed! Sealed quotes are now unsealed and ranked. Buyer voting is OPEN.`,
+    };
+  }
+
+  async fastForwardResolveVote(groupId: string) {
+    const rfq = await this.prisma.rFQ.findUnique({
+      where: { groupId },
+      include: {
+        quotes: { orderBy: { totalLandedCostPaise: 'asc' } },
+        group: { include: { memberships: true } },
+      },
+    });
+
+    if (!rfq || rfq.quotes.length === 0) {
+      throw new NotFoundException('No quotes available to resolve vote');
+    }
+
+    const winningQuote = rfq.quotes[0]; // Lowest landed cost
+
+    // 1. Cast votes for all members
+    for (const m of rfq.group.memberships) {
+      await this.prisma.vote.upsert({
+        where: { membershipId: m.id },
+        create: {
+          rfqId: rfq.id,
+          membershipId: m.id,
+          buyerProfileId: m.buyerProfileId,
+          quoteId: winningQuote.id,
+        },
+        update: { quoteId: winningQuote.id },
+      });
+    }
+
+    // 2. Declare winning quote and lock group
+    await this.prisma.rFQ.update({
+      where: { id: rfq.id },
+      data: {
+        status: 'AWARDED',
+        winningQuoteId: winningQuote.id,
+      },
+    });
+
+    const updatedGroup = await this.prisma.group.update({
+      where: { id: groupId },
+      data: {
+        status: 'DEAL_LOCKED',
+        dealLockedAt: new Date(),
+      },
+    });
+
+    // 3. Create confirmed Bookings
+    const bookings = [];
+    for (let i = 0; i < rfq.group.memberships.length; i++) {
+      const m = rfq.group.memberships[i];
+      const existing = await this.prisma.booking.findUnique({ where: { membershipId: m.id } });
+      if (!existing) {
+        const b = await this.prisma.booking.create({
+          data: {
+            bookingNumber: `BK-FF-${groupId.slice(0, 4)}-${String(i + 1).padStart(3, '0')}`,
+            membershipId: m.id,
+            quoteId: winningQuote.id,
+            status: 'TOKEN_CONFIRMED',
+            totalOnRoadPaise: winningQuote.totalLandedCostPaise,
+            tokenAmountPaise: BigInt(500000),
+            balanceAmountPaise: winningQuote.totalLandedCostPaise - BigInt(500000),
+            chassisNumber: `MA3DEMO${Date.now().toString().slice(-6)}${i}`,
+          },
+        });
+        bookings.push(b);
+      } else {
+        bookings.push(existing);
+      }
+    }
+
+    return {
+      success: true,
+      step: 'DEAL_LOCKED_AND_BOOKED',
+      group: updatedGroup,
+      winningQuote: {
+        id: winningQuote.id,
+        landedCostPaise: winningQuote.totalLandedCostPaise.toString(),
+      },
+      bookingsCount: bookings.length,
+      message: `Vote resolved! Winning quote awarded to best dealer. All ${bookings.length} bookings locked with escrow tokens.`,
+    };
+  }
+
+  async fastForwardCompleteDelivery(groupId: string) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        memberships: {
+          include: {
+            booking: true,
+            buyerProfile: true,
+          },
+        },
+        rfq: {
+          include: {
+            winningQuote: {
+              include: { sellerProfile: true },
+            },
+          },
+        },
+        targetZone: true,
+      },
+    });
+
+    if (!group) throw new NotFoundException('Group not found');
+
+    const winningQuote = group.rfq?.winningQuote;
+    const seller = winningQuote?.sellerProfile;
+
+    let deliveriesUpdated = 0;
+
+    for (const m of group.memberships) {
+      if (m.booking) {
+        // 1. Mark booking FULFILLED
+        await this.prisma.booking.update({
+          where: { id: m.booking.id },
+          data: {
+            status: 'FULFILLED',
+            registrationNumber: `MH-12-FF-${String(Math.floor(1000 + Math.random() * 9000))}`,
+          },
+        });
+
+        // 2. Delivery Shipment
+        const shipment = await this.prisma.deliveryShipment.upsert({
+          where: { bookingId: m.booking.id },
+          create: {
+            bookingId: m.booking.id,
+            logisticsProvider: 'GroupDrive Regional Fleet Logistics',
+            driverName: 'Vikram Singh Rathore',
+            driverPhone: '+919822998877',
+            trackingNumber: `TRK-GD-${m.booking.bookingNumber}`,
+            originBranchId: winningQuote?.branchId || seller?.id || group.targetZoneId,
+            destinationZoneId: group.targetZoneId,
+            status: 'DOORSTEP_DELIVERED',
+            estimatedDeliveryAt: new Date(),
+            actualDeliveredAt: new Date(),
+          },
+          update: {
+            status: 'DOORSTEP_DELIVERED',
+            actualDeliveredAt: new Date(),
+          },
+        });
+
+        // 3. Shipment Milestone
+        await this.prisma.shipmentMilestone.create({
+          data: {
+            shipmentId: shipment.id,
+            title: 'Doorstep Delivered & Inspected',
+            locationName: `${group.targetZone.name} Rural Delivery Hub`,
+            timestamp: new Date(),
+            proofPhotoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400',
+          },
+        });
+
+        // 4. Settle Commission (1% of deal value + 18% GST)
+        if (seller && winningQuote) {
+          const grossVal = winningQuote.totalLandedCostPaise;
+          const commissionPaise = BigInt(Math.round(Number(grossVal) * 0.01));
+          const netSellerPayable = grossVal - commissionPaise;
+
+          await this.prisma.settlement.upsert({
+            where: { bookingId: m.booking.id },
+            create: {
+              bookingId: m.booking.id,
+              sellerProfileId: seller.id,
+              grossDealValuePaise: grossVal,
+              commissionPercent: 1.0,
+              platformCommissionPaise: commissionPaise,
+              netPayableToSellerPaise: netSellerPayable,
+              status: 'PROCESSED',
+              settledAt: new Date(),
+            },
+            update: {
+              status: 'PROCESSED',
+              settledAt: new Date(),
+            },
+          });
+        }
+
+        // 5. Buyer Review
+        if (seller) {
+          await this.prisma.review.upsert({
+            where: { bookingId: m.booking.id },
+            create: {
+              bookingId: m.booking.id,
+              buyerProfileId: m.buyerProfileId,
+              sellerProfileId: seller.id,
+              rating: 5,
+              title: 'Fast-forward verified delivery & huge group discount!',
+              comment: `Seamless collective buying. Vehicle handed over with full inspection checklist at ${group.targetZone.name}.`,
+            },
+            update: {},
+          });
+        }
+
+        deliveriesUpdated++;
+      }
+    }
+
+    // Mark group COMPLETED
+    const updatedGroup = await this.prisma.group.update({
+      where: { id: groupId },
+      data: { status: 'COMPLETED' },
+    });
+
+    return {
+      success: true,
+      step: 'DELIVERED_AND_SETTLED',
+      group: updatedGroup,
+      deliveriesUpdated,
+      message: `All ${deliveriesUpdated} vehicle deliveries verified! 1% platform commission settled and buyer reviews generated.`,
+    };
+  }
+
+  async fastForwardResetGroup(groupId: string) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        rfq: {
+          include: {
+            quotes: true,
+          },
+        },
+        memberships: {
+          include: {
+            booking: true,
+          },
+        },
+      },
+    });
+
+    if (!group) throw new NotFoundException('Group not found');
+
+    // Clean bookings, reviews, settlements, shipments for this group
+    for (const m of group.memberships) {
+      if (m.booking) {
+        await this.prisma.review.deleteMany({ where: { bookingId: m.booking.id } });
+        await this.prisma.settlement.deleteMany({ where: { bookingId: m.booking.id } });
+        await this.prisma.shipmentMilestone.deleteMany({
+          where: { shipment: { bookingId: m.booking.id } },
+        });
+        await this.prisma.deliveryShipment.deleteMany({ where: { bookingId: m.booking.id } });
+        await this.prisma.booking.deleteMany({ where: { id: m.booking.id } });
+      }
+    }
+
+    if (group.rfq) {
+      await this.prisma.vote.deleteMany({ where: { rfqId: group.rfq.id } });
+      await this.prisma.quoteLineItem.deleteMany({
+        where: { quote: { rfqId: group.rfq.id } },
+      });
+      await this.prisma.quote.deleteMany({ where: { rfqId: group.rfq.id } });
+      await this.prisma.rFQ.delete({ where: { id: group.rfq.id } });
+    }
+
+    const resetGroup = await this.prisma.group.update({
+      where: { id: groupId },
+      data: {
+        status: 'FORMING',
+        currentCount: 2,
+        quorumReachedAt: null,
+        dealLockedAt: null,
+      },
+    });
+
+    return {
+      success: true,
+      step: 'GROUP_RESET_TO_FORMING',
+      group: resetGroup,
+      message: `Group '${groupId.slice(0, 8)}' reset to FORMING (2/${group.targetCount} members). Ready for new demo run!`,
+    };
+  }
 }

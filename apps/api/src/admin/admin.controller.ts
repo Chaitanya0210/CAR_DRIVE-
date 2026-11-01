@@ -178,4 +178,35 @@ export class AdminController {
   ) {
     return this.adminService.getAuditLogs(actorType, action, parseInt(limit, 10));
   }
+
+  // 10. GUIDED DEMO MODE & FAST-FORWARD API
+  @Get('demo/groups')
+  async getDemoGroups() {
+    return this.adminService.getDemoGroups();
+  }
+
+  @Post('demo/fast-forward/threshold/:groupId')
+  async fastForwardThreshold(@Param('groupId') groupId: string) {
+    return this.adminService.fastForwardThreshold(groupId);
+  }
+
+  @Post('demo/fast-forward/close-bidding/:groupId')
+  async fastForwardCloseBidding(@Param('groupId') groupId: string) {
+    return this.adminService.fastForwardCloseBidding(groupId);
+  }
+
+  @Post('demo/fast-forward/resolve-vote/:groupId')
+  async fastForwardResolveVote(@Param('groupId') groupId: string) {
+    return this.adminService.fastForwardResolveVote(groupId);
+  }
+
+  @Post('demo/fast-forward/complete-delivery/:groupId')
+  async fastForwardCompleteDelivery(@Param('groupId') groupId: string) {
+    return this.adminService.fastForwardCompleteDelivery(groupId);
+  }
+
+  @Post('demo/fast-forward/reset-group/:groupId')
+  async fastForwardResetGroup(@Param('groupId') groupId: string) {
+    return this.adminService.fastForwardResetGroup(groupId);
+  }
 }
