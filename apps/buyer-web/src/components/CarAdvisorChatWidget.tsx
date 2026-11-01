@@ -241,7 +241,7 @@ export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: bo
             <Sparkles className="w-5 h-5 animate-pulse text-amber-300" />
             <span>AI Car Advisor</span>
             <span className="text-[10px] bg-white text-red-700 px-2 py-0.5 rounded-full font-mono uppercase font-bold shadow-xs">
-              Hinglish • मराठी
+              Online
             </span>
           </button>
         </div>
@@ -269,7 +269,7 @@ export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: bo
                   </Badge>
                 </div>
                 <p className="text-[11px] text-neutral-300 font-medium">
-                  Rural-First Guidance • Hinglish, मराठी & हिंदी
+                  Vehicle Guidance & On-Road Price Advisory
                 </p>
               </div>
             </div>

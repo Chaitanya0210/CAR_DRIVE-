@@ -13,7 +13,6 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { CarAdvisorChatWidget } from '../components/CarAdvisorChatWidget';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { OnboardingTour } from '../components/OnboardingTour';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -32,14 +31,11 @@ export default function HomePage() {
             <h1 className="text-xl font-black text-neutral-900 tracking-tight">
               {t('brand_name')}
             </h1>
-            <p className="text-xs text-neutral-600 font-medium">ग्रुपड्राइव • भारत</p>
+            <p className="text-xs text-neutral-600 font-medium">GroupDrive • India</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Interactive Multi-language Switcher */}
-          <LanguageSwitcher />
-
           {/* Guided Demo Button */}
           <Link href="/demo">
             <Button
@@ -163,7 +159,7 @@ export default function HomePage() {
             Demo Hub
           </Link>
           <span>•</span>
-          <span className="font-semibold text-neutral-700">English • हिंदी • मराठी</span>
+          <span className="font-semibold text-neutral-700">English</span>
           <span>•</span>
           <span>{t('footer_standards')}</span>
         </div>

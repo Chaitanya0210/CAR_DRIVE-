@@ -39,7 +39,7 @@ export default function AdvisorPage() {
 
         <div className="flex items-center gap-2">
           <Badge variant="primary" className="text-xs">
-            Hinglish • मराठी • हिंदी
+            AI Assistant
           </Badge>
         </div>
       </header>
@@ -47,7 +47,7 @@ export default function AdvisorPage() {
       <section className="py-8 my-auto text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold border border-red-200">
           <Sparkles className="w-3.5 h-3.5 text-red-700" />
-          <span>Multilingual Automotive RAG Knowledge Base</span>
+          <span>Automotive AI Knowledge Base</span>
         </div>
         <h2 className="text-3xl sm:text-4xl font-black text-neutral-900 tracking-tight">
           Explore vehicle comparisons, landed costs, & reverse auctions

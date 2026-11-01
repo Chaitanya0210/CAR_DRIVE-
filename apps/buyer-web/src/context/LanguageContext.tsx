@@ -30,11 +30,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('groupdrive_lang') as LanguageCode | null;
-      if (saved && (saved === 'en' || saved === 'hi' || saved === 'mr')) {
-        setLangState(saved);
-        document.documentElement.lang = saved;
-      }
+      localStorage.setItem('groupdrive_lang', 'en');
+      document.cookie = `groupdrive_lang=en; path=/; max-age=31536000; SameSite=Lax`;
+      document.documentElement.lang = 'en';
     } catch {
       // Fallback
     }
