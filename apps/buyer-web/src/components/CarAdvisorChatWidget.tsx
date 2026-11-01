@@ -80,7 +80,7 @@ export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: bo
           confidence: 0.98,
         },
       ],
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: 'Just now',
     },
   ]);
 
@@ -100,7 +100,7 @@ export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: bo
       id: `user-${Date.now()}`,
       sender: 'user',
       text: q,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: 'Just now',
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -129,7 +129,7 @@ export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: bo
           confidence: data.confidence,
           entities: data.entities,
           handoff: data.handoff,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: 'Just now',
         };
         setMessages((prev) => [...prev, advisorMsg]);
       } else {
@@ -220,7 +220,7 @@ export function CarAdvisorChatWidget({ defaultOpen = false }: { defaultOpen?: bo
           citations: fallbackCitations,
           confidence: 0.92,
           handoff: fallbackHandoff,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: 'Just now',
         },
       ]);
     } finally {

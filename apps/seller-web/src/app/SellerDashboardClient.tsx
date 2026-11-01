@@ -143,10 +143,16 @@ export default function SellerDashboardClient() {
   const refreshStats = async () => {
     setLoading(true);
     try {
-      const [statsRes, demandRes] = await Promise.all([
-        fetch('http://localhost:4000/sellers/me/dashboard-stats'),
-        fetch('http://localhost:4000/sellers/me/territory-demand'),
-      ]);
+      const sellerId =
+        (typeof window !== 'undefined' && localStorage.getItem('gd_demo_seller_id')) ||
+        'slr_apex_pune_001';
+      const authHeaders = { 'x-seller-id': sellerId, 'x-user-role': 'SELLER' };
+      const statsRes = await fetch('http://localhost:4000/sellers/me/dashboard-stats', {
+        headers: authHeaders,
+      });
+      const demandRes = await fetch('http://localhost:4000/sellers/me/territory-demand', {
+        headers: authHeaders,
+      });
 
       if (statsRes.ok) {
         const data = await statsRes.json();

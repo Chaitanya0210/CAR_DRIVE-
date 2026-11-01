@@ -6,13 +6,12 @@ export const metadata: Metadata = {
   title: 'GroupDrive Ops Console — Internal Admin',
   description:
     'Internal operations portal for KYB approvals, tax rate verification, and immutable audit logs.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="light" style={{ colorScheme: 'light' }}>
       <body className="min-h-screen bg-white text-neutral-900 antialiased font-sans">

@@ -104,22 +104,20 @@ export class AdminFinanceService {
 
   async getLedgerEntries(page = 1, pageSize = 20) {
     const skip = (page - 1) * pageSize;
-    const [entries, total] = await Promise.all([
-      this.prisma.ledgerEntry.findMany({
-        skip,
-        take: pageSize,
-        orderBy: { entryNumber: 'desc' },
-        include: {
-          booking: {
-            select: {
-              bookingNumber: true,
-              totalOnRoadPaise: true,
-            },
+    const entries = await this.prisma.ledgerEntry.findMany({
+      skip,
+      take: pageSize,
+      orderBy: { entryNumber: 'desc' },
+      include: {
+        booking: {
+          select: {
+            bookingNumber: true,
+            totalOnRoadPaise: true,
           },
         },
-      }),
-      this.prisma.ledgerEntry.count(),
-    ]);
+      },
+    });
+    const total = await this.prisma.ledgerEntry.count();
 
     return {
       data: entries.map((entry) => ({

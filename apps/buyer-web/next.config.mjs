@@ -2,9 +2,9 @@
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
-  style-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' blob: data: https://images.unsplash.com https://*.openstreetmap.org;
-  font-src 'self' data:;
+  font-src 'self' data: https://fonts.gstatic.com;
   connect-src 'self' http://127.0.0.1:8000 http://127.0.0.1:4000 http://localhost:8000 http://localhost:4000 https:;
   frame-ancestors 'none';
   object-src 'none';
@@ -13,7 +13,7 @@ const cspHeader = `
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig = {
-  output: 'standalone',
+  output: process.env.DOCKER_BUILD ? 'standalone' : undefined,
   transpilePackages: ['@groupdrive/ui', '@groupdrive/shared'],
   images: {
     remotePatterns: [

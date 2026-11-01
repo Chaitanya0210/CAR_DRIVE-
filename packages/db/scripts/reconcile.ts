@@ -8,6 +8,7 @@
  * 4. Subledger Cross-Reconciliation against Bookings, Payments, Settlements, and Registration Fees
  */
 
+import 'dotenv/config';
 import { PrismaClient, LedgerAccountType } from '@prisma/client';
 
 const prisma = new PrismaClient();
