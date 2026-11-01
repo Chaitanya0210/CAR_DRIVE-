@@ -183,12 +183,6 @@ export default function DemoPage() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
-              href="/design"
-              className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 px-3 py-1.5 rounded-lg hover:bg-neutral-100"
-            >
-              Component Kit
-            </Link>
-            <Link
               href="/"
               className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 px-3 py-1.5 rounded-lg hover:bg-neutral-100"
             >

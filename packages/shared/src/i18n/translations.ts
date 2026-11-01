@@ -8,7 +8,7 @@ export const TRANSLATIONS = {
     hero_highlight: 'Get bulk dealer pricing delivered to your door.',
     hero_subtitle:
       'GroupDrive aggregates demand across Indian districts and talukas. Once your group hits quorum, verified dealers nationwide compete in a sealed reverse auction. Compare quotes strictly on landed delivery cost.',
-    explore_design: 'Explore Component Design System',
+    explore_design: 'Explore Buying Groups',
     card_quorum_title: 'Taluka Demand Quorum',
     card_quorum_desc:
       'Join buyers in Baramati, Karad, or Haveli to unlock collective volume buying power.',
@@ -62,7 +62,7 @@ export const TRANSLATIONS = {
     hero_highlight: 'थोक डीलर डिस्काउंट सीधे अपने दरवाजे पर पाएं।',
     hero_subtitle:
       'ग्रुपड्राइव भारतीय जिलों और तालुकों में खरीदारों को जोड़ता है। जब आपका ग्रुप कोरम पूरा करता है, तो देश भर के प्रमाणित डीलर सीलबंद रिवर्स ऑक्शन में सबसे कम कीमत के लिए प्रतिस्पर्धा करते हैं।',
-    explore_design: 'कंपोनेंट डिज़ाइन सिस्टम देखें',
+    explore_design: 'सक्रिय वाहन ग्रुप देखें',
     card_quorum_title: 'तालुका डिमांड कोरम',
     card_quorum_desc:
       'बारामती, कराड या हवेली के खरीदारों के साथ मिलकर थोक सौदेबाजी की शक्ति हासिल करें।',
@@ -113,7 +113,7 @@ export const TRANSLATIONS = {
     hero_highlight: 'घाऊक डीलर सवलत थेट तुमच्या दारापर्यंत मिळवा.',
     hero_subtitle:
       'ग्रुपड्राइव्ह महाराष्ट्रातील तालुके आणि जिल्ह्यांमधील खरेदीदारांना एकत्र आणते. तुमच्या गटाने कोरम गाठताच, अधिकृत डीलर्स सीलबंद रिव्हर्स लिलावात स्पर्धा करतात. घरपोच डिलिव्हरी खर्चावर थेट तुलना करा.',
-    explore_design: 'घटक डिझाइन प्रणाली पहा',
+    explore_design: 'सक्रिय खरेदीदार गट पहा',
     card_quorum_title: 'तालुका मागणी कोरम',
     card_quorum_desc:
       'बारामती, कराड किंवा हवेलीतील खरेदीदारांसोबत एकत्र येऊन घाऊक खरेदीची ताकद मिळवा.',

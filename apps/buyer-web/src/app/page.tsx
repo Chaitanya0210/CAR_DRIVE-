@@ -73,11 +73,6 @@ export default function HomePage() {
               <span>{t('ai_advisor_btn')}</span>
             </Button>
           </Link>
-          <Link href="/design">
-            <Button variant="outline" size="sm">
-              {t('design_system_btn')}
-            </Button>
-          </Link>
         </div>
       </header>
 
@@ -101,7 +96,7 @@ export default function HomePage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4">
-          <Link href="/design" className="w-full sm:w-auto">
+          <Link href="/demo" className="w-full sm:w-auto">
             <Button
               size="lg"
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold"
