@@ -1,0 +1,68 @@
+# =============================================================================
+# GroupDrive Production Reverse Proxy Configuration (Caddy)
+# Single-VM Production Traffic Router
+# =============================================================================
+
+{
+    admin off
+    auto_https off
+}
+
+:80 {
+    # Compression
+    encode gzip zstd
+
+    # Security Headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+
+    # API Routes
+    @api path /api/* /health* /admin/api/* /admin/demo/*
+    handle @api {
+        reverse_proxy api:4000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # AI Service Routes
+    @ai path /ai/*
+    handle @ai {
+        uri strip_prefix /ai
+        reverse_proxy ai-service:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+        }
+    }
+
+    # MinIO S3 Object Storage API
+    @s3 path /s3/*
+    handle @s3 {
+        uri strip_prefix /s3
+        reverse_proxy minio:9000
+    }
+
+    # Admin Portal
+    @admin path /ops*
+    handle @admin {
+        reverse_proxy admin-web:3002
+    }
+
+    # Seller Portal
+    @seller path /dealer*
+    handle @seller {
+        reverse_proxy seller-web:3001
+    }
+
+    # Buyer Portal (Default root and all other routes)
+    handle {
+        reverse_proxy buyer-web:3000
+    }
+}

@@ -14,7 +14,6 @@ export class EmailAdapter {
       throw new Error('SMTP connection reset by peer (SendGrid 421)');
     }
 
-    const recipient = payload.recipientEmail || 'buyer@example.com';
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}@groupdrive.in`;
 
     return {

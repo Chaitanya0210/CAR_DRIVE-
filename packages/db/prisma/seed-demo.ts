@@ -3112,7 +3112,9 @@ async function main() {
         deadline: new Date(Date.now() + 86400000 * gDef.deadlineDays),
         quorumReachedAt:
           gDef.status !== GroupStatus.FORMING ? new Date(Date.now() - 86400000 * 5) : null,
-        dealLockedAt: [GroupStatus.DEAL_LOCKED, GroupStatus.COMPLETED].includes(gDef.status)
+        dealLockedAt: ([GroupStatus.DEAL_LOCKED, GroupStatus.COMPLETED] as GroupStatus[]).includes(
+          gDef.status,
+        )
           ? new Date(Date.now() - 86400000 * 2)
           : null,
       },
@@ -3154,12 +3156,14 @@ async function main() {
 
     // Attach RFQs and Quotes for stages >= RFQ_ACTIVE
     if (
-      [
-        GroupStatus.RFQ_ACTIVE,
-        GroupStatus.VOTING_OPEN,
-        GroupStatus.DEAL_LOCKED,
-        GroupStatus.COMPLETED,
-      ].includes(gDef.status)
+      (
+        [
+          GroupStatus.RFQ_ACTIVE,
+          GroupStatus.VOTING_OPEN,
+          GroupStatus.DEAL_LOCKED,
+          GroupStatus.COMPLETED,
+        ] as GroupStatus[]
+      ).includes(gDef.status)
     ) {
       const rfqStatus =
         gDef.status === GroupStatus.RFQ_ACTIVE
@@ -3293,7 +3297,7 @@ async function main() {
 
       // If DEAL_LOCKED or COMPLETED: set winningQuote, create Bookings
       if (
-        [GroupStatus.DEAL_LOCKED, GroupStatus.COMPLETED].includes(gDef.status) &&
+        ([GroupStatus.DEAL_LOCKED, GroupStatus.COMPLETED] as GroupStatus[]).includes(gDef.status) &&
         winningQuoteId &&
         winningQuoteEntity
       ) {

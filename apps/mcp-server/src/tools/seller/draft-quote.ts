@@ -60,7 +60,6 @@ export async function handleDraftQuote(params: DraftQuoteInput, auth: AuthContex
   const commSplit = calculatePlatformCommission(totalBatchDealValuePaise);
   const platformCommissionBasePaise = commSplit.commissionPaise;
   const platformCommissionGstPaise = commSplit.gstPaise;
-  const totalPlatformFeePaise = commSplit.totalPlatformFeePaise;
   const netDealerPayoutBatchPaise = commSplit.netDealerPayoutPaise;
 
   const draftRecord: PlatformQuote = {

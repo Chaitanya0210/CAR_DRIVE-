@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatPaise, LandedCostBreakdown } from '@groupdrive/shared';
-import { Check, Trophy, Truck, ShieldCheck, Info } from 'lucide-react';
+import { Check, Trophy, Truck, ShieldCheck } from 'lucide-react';
 import { cn } from '../utils';
 import { Button } from './button';
 import { Badge, VerifiedBadge } from './badge';
@@ -115,7 +115,7 @@ export const QuoteComparisonTable: React.FC<QuoteComparisonTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {sortedQuotes.map((q, idx) => {
+            {sortedQuotes.map((q, _idx) => {
               const isBest = q.breakdown.totalLandedCostPaise === bestLandedCost;
               return (
                 <tr

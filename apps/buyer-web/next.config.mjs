@@ -13,6 +13,7 @@ const cspHeader = `
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig = {
+  output: 'standalone',
   transpilePackages: ['@groupdrive/ui', '@groupdrive/shared'],
   images: {
     remotePatterns: [

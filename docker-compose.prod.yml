@@ -1,0 +1,310 @@
+version: '3.8'
+
+# =============================================================================
+# GroupDrive Single-VM Production Deployment Stack (docker-compose.prod.yml)
+# High-availability, non-root containers, persistent volumes, and health checks
+# =============================================================================
+
+networks:
+  groupdrive_net:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  minio_prod_data:
+    driver: local
+  caddy_prod_data:
+    driver: local
+  caddy_prod_config:
+    driver: local
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. Reverse Proxy & Edge Router (Caddy)
+  # ---------------------------------------------------------------------------
+  gateway:
+    image: caddy:2.8-alpine
+    container_name: groupdrive-gateway
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_prod_data:/data
+      - caddy_prod_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+      buyer-web:
+        condition: service_healthy
+      seller-web:
+        condition: service_healthy
+      admin-web:
+        condition: service_healthy
+    networks:
+      - groupdrive_net
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
+
+  # ---------------------------------------------------------------------------
+  # 2. Relational Database with PostGIS (PostgreSQL 16)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: groupdrive-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-groupdrive_db}
+      POSTGRES_USER: ${POSTGRES_USER:-groupdrive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-groupdrive_production_secret}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-groupdrive} -d ${POSTGRES_DB:-groupdrive_db}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - groupdrive_net
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
+
+  # ---------------------------------------------------------------------------
+  # 3. High-Performance In-Memory Cache (Redis 7)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: groupdrive-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-groupdrive_redis_secret}
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-groupdrive_redis_secret}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - groupdrive_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # ---------------------------------------------------------------------------
+  # 4. S3-Compatible Object Storage (MinIO)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
+    container_name: groupdrive-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-groupdrive_s3_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-groupdrive_s3_secret_key}
+    volumes:
+      - minio_prod_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - groupdrive_net
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # ---------------------------------------------------------------------------
+  # 5. Core Monolith API (NestJS)
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: groupdrive-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-groupdrive}:${POSTGRES_PASSWORD:-groupdrive_production_secret}@postgres:5432/${POSTGRES_DB:-groupdrive_db}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-groupdrive_redis_secret}@redis:6379
+      AI_SERVICE_URL: http://ai-service:8000
+      JWT_BUYER_SECRET: ${JWT_BUYER_SECRET:-prod-secret-buyer-key-32-chars-min}
+      JWT_SELLER_SECRET: ${JWT_SELLER_SECRET:-prod-secret-seller-key-32-chars-min}
+      JWT_ADMIN_SECRET: ${JWT_ADMIN_SECRET:-prod-secret-admin-key-32-chars-min}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_live_key_placeholder}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-rzp_live_secret_placeholder}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - groupdrive_net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
+
+  # ---------------------------------------------------------------------------
+  # 6. Multilingual RAG Car Advisor & NLP Engine (FastAPI)
+  # ---------------------------------------------------------------------------
+  ai-service:
+    build:
+      context: .
+      dockerfile: apps/ai-service/Dockerfile
+    container_name: groupdrive-ai-service
+    restart: unless-stopped
+    environment:
+      ENV: production
+      HOST: 0.0.0.0
+      PORT: 8000
+      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-fallback}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    networks:
+      - groupdrive_net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
+
+  # ---------------------------------------------------------------------------
+  # 7. Rural Buyer Web Portal (Next.js 14 Standalone)
+  # ---------------------------------------------------------------------------
+  buyer-web:
+    build:
+      context: .
+      dockerfile: apps/buyer-web/Dockerfile
+    container_name: groupdrive-buyer-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://api:4000
+      NEXT_PUBLIC_AI_URL: http://ai-service:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - groupdrive_net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # 8. Dealership Seller Portal (Next.js 14 Standalone)
+  # ---------------------------------------------------------------------------
+  seller-web:
+    build:
+      context: .
+      dockerfile: apps/seller-web/Dockerfile
+    container_name: groupdrive-seller-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: http://api:4000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - groupdrive_net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # 9. Super Admin Ops Console (Next.js 14 Standalone)
+  # ---------------------------------------------------------------------------
+  admin-web:
+    build:
+      context: .
+      dockerfile: apps/admin-web/Dockerfile
+    container_name: groupdrive-admin-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      NEXT_PUBLIC_API_URL: http://api:4000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - groupdrive_net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M

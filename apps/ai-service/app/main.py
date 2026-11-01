@@ -27,6 +27,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import time
+START_TIME = time.time()
+
 @app.on_event("startup")
 def startup_event():
     """Initializes knowledge base and vector retriever on startup."""
@@ -34,11 +37,20 @@ def startup_event():
 
 @app.get("/health")
 def health_check():
+    uptime_seconds = int(time.time() - START_TIME)
     return {
         "status": "ok",
         "service": "groupdrive-ai-service",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": settings.version,
+        "environment": settings.environment,
+        "uptime_seconds": uptime_seconds,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "provider": settings.default_provider,
+        "embedding_model": settings.embedding_model_name,
+        "guardrails": {
+            "pii_redaction": settings.enable_pii_redaction,
+            "injection_filter": settings.enable_injection_filter,
+        },
     }
 
 @app.get("/")

@@ -13,7 +13,6 @@ export class WhatsAppAdapter {
       throw new Error('Meta WhatsApp Cloud API rate limit (Error code 131053)');
     }
 
-    const recipient = payload.recipientPhone || '+919876543210';
     const messageId = `wamid_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     return {

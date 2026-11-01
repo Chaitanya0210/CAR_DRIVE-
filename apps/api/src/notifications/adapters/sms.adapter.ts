@@ -13,7 +13,6 @@ export class SmsAdapter {
       throw new Error('Telecom SMS gateway timeout (DLT Gateway Error 504)');
     }
 
-    const recipient = payload.recipientPhone || '+919876543210';
     const messageId = `sms_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
     return {

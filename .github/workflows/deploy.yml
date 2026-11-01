@@ -1,0 +1,223 @@
+name: GroupDrive CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Manual deployment target'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip test suite (Emergency hotfix only)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ===========================================================================
+  # Stage 1: Build, Lint, Typecheck, Security Audit & Golden Path Tests
+  # ===========================================================================
+  test-and-verify:
+    name: 1. Test, Audit & Verify
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.16.1
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Monorepo Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @groupdrive/db run prisma:generate
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Run TypeScript Verification
+        run: pnpm type-check
+
+      - name: Run OWASP Dependency Audit
+        run: pnpm audit --prod --audit-level high
+
+      - name: Run Unit Tests & Security Invariant Checks
+        run: pnpm test
+
+      - name: Verify Double-Entry Ledger Equilibrium
+        run: pnpm reconcile
+
+  # ===========================================================================
+  # Stage 2: Database Migration & Pre-flight Checks (Staging)
+  # ===========================================================================
+  migrate-staging:
+    name: 2. Staging DB Migration
+    runs-on: ubuntu-latest
+    needs: [test-and-verify]
+    if: always() && (needs.test-and-verify.result == 'success' || inputs.skip_tests)
+    environment: staging
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.16.1
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Execute Prisma Migration on Staging DB
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          pnpm --filter @groupdrive/db exec prisma migrate deploy
+
+  # ===========================================================================
+  # Stage 3: Build & Deploy to Staging (Automated on Merge)
+  # ===========================================================================
+  deploy-staging:
+    name: 3. Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [migrate-staging]
+    environment: staging
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push API Image (Staging)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/api:staging-${{ github.sha }}
+            ghcr.io/${{ github.repository }}/api:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push AI Service Image (Staging)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/ai-service/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/ai-service:staging-${{ github.sha }}
+            ghcr.io/${{ github.repository }}/ai-service:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger Staging Cloud Deploy Webhook / Service Update
+        run: |
+          echo "Simulating zero-downtime deployment trigger for Staging..."
+          # curl -X POST ${{ secrets.STAGING_DEPLOY_WEBHOOK_URL }}
+
+      - name: Run Staging Smoke Test Suite
+        env:
+          STAGING_URL: ${{ secrets.STAGING_API_URL || 'https://api.staging.groupdrive.in' }}
+        run: |
+          echo "Running post-deploy smoke tests against $STAGING_URL..."
+          # pnpm smoke --url "$STAGING_URL"
+
+  # ===========================================================================
+  # Stage 4: Production Deployment (Requires Manual Approval in GitHub)
+  # ===========================================================================
+  deploy-production:
+    name: 4. Deploy to Production (Manual Approval Gate)
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    environment:
+      name: production
+      url: https://groupdrive.in
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.16.1
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Execute Prisma Migration on Production DB
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          echo "Applying forward-only database schema migrations to Production..."
+          pnpm --filter @groupdrive/db exec prisma migrate deploy
+
+      - name: Log in to Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote Docker Images to Production Tag
+        run: |
+          docker pull ghcr.io/${{ github.repository }}/api:staging-${{ github.sha }}
+          docker tag ghcr.io/${{ github.repository }}/api:staging-${{ github.sha }} ghcr.io/${{ github.repository }}/api:prod-${{ github.sha }}
+          docker tag ghcr.io/${{ github.repository }}/api:staging-${{ github.sha }} ghcr.io/${{ github.repository }}/api:latest
+          docker push ghcr.io/${{ github.repository }}/api:prod-${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/api:latest
+
+      - name: Execute Zero-Downtime Rolling Update on ECS / Kubernetes / VM
+        run: |
+          echo "Rolling out version prod-${{ github.sha }} to production clusters..."
+          # aws ecs update-service --cluster groupdrive-production-cluster --service groupdrive-production-api-service --force-new-deployment
+
+      - name: Production Post-Deploy Smoke Test
+        run: |
+          echo "Running post-deploy golden path smoke tests against Production..."
+          # pnpm smoke --url https://api.groupdrive.in

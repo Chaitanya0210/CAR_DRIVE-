@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Headers, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { SellerAnalyticsService } from './seller-analytics.service';
 import { SellerAuthGuard } from '../common/guards/seller-auth.guard';
 

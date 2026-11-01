@@ -14,7 +14,6 @@ export class PushAdapter {
       throw new Error('FCM push token expired or unregistered (UNREGISTERED)');
     }
 
-    const token = payload.recipientPushToken || 'fcm_mock_token_abc123';
     const messageId = `push_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
     return {

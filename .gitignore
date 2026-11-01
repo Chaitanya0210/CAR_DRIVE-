@@ -20,3 +20,7 @@ Thumbs.db
 .pgdata
 playwright-report
 test-results
+backups/
+*.dump
+*.sql
+*.sha256

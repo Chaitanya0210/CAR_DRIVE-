@@ -130,7 +130,7 @@ describe('OWASP Top 10 & ASVS Level 2 Verification Suite', () => {
 
     it('Refresh Token Reuse Detection: invalidates entire family upon reuse', () => {
       // 1. Issue initial token family
-      const { refreshToken, familyId } = authService.issueTokenFamily('seller-usr-1', 'SELLER');
+      const { refreshToken } = authService.issueTokenFamily('seller-usr-1', 'SELLER');
 
       // 2. Legitimate rotation: exchange token 1 for token 2
       const rot1 = authService.rotateRefreshToken(refreshToken);

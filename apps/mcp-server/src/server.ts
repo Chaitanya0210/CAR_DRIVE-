@@ -13,10 +13,9 @@ import {
   authenticateToken,
   assertAuthorized,
   UnauthorizedError,
-  ForbiddenError,
 } from './auth/tokens.js';
-import { rateLimiter, RateLimitExceededError } from './security/rate-limiter.js';
-import { costBudgetManager, CostBudgetExceededError } from './security/cost-budget.js';
+import { rateLimiter } from './security/rate-limiter.js';
+import { costBudgetManager } from './security/cost-budget.js';
 import { idempotencyStore } from './security/idempotency.js';
 import { deepScanObject } from './security/injection-detector.js';
 import { auditLogger } from './security/audit-logger.js';
